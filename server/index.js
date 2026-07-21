@@ -6,6 +6,8 @@ import compression from "compression";
 import fs from "fs";
 import path from "path";
 import { mountApi } from "./api.js";
+import { hasDb } from "../db/index.js";
+import { ensureSchema } from "../db/ensure-schema.js";
 import "dotenv/config";
 
 const isProduction = process.env.NODE_ENV === "production";
@@ -13,6 +15,18 @@ const port = process.env.PORT || 3000;
 const root = process.cwd();
 
 async function startServer() {
+  // DB varsa tabloyu açılışta garanti et (idempotent). Böylece yeni bir Railway
+  // ortamında `relation "leads" does not exist` hatası oluşmaz.
+  if (hasDb) {
+    try {
+      await ensureSchema();
+      console.log("Veritabanı şeması hazır (leads).");
+    } catch (err) {
+      // Site yine de ayağa kalksın; sadece DB uçları hata verir.
+      console.error("Veritabanı şeması hazırlanamadı:", err.message);
+    }
+  }
+
   const app = express();
   app.use(compression());
   app.use(express.json({ limit: "1mb" }));

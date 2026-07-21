@@ -47,12 +47,9 @@ npm run dev          # http://localhost:3000
 4. Railway otomatik algılar:
    - **Build:** `npm run build`
    - **Start:** `npm start`   (Railway `PORT`'u kendi verir, kod onu okur)
-5. İlk deploy'dan sonra **bir kez** tabloyu oluştur:
-   ```bash
-   npm run db:migrate
-   ```
-   Bunu ya Railway servis shell'inde, ya da lokalde aynı `DATABASE_URL`'i `.env`'e
-   koyup çalıştır. `leads` tablosu oluşur. (İdempotent — tekrar çalıştırmak zararsız.)
+5. **Tablo oluşturma otomatik** — sunucu her açılışta `CREATE TABLE IF NOT EXISTS leads`
+   çalıştırır (bkz. `db/ensure-schema.js`). Elle bir şey yapman gerekmez.
+   İstersen dışarıdan da tetikleyebilirsin: `npm run db:migrate` (aynı şemayı uygular).
 6. Verilen `*.up.railway.app` adresini aç → formu doldur → `/panel`'de `ADMIN_PASSWORD` ile gir → talebi gör.
 
 ### Deploy sonrası hızlı kontrol
