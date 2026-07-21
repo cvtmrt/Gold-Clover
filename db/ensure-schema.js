@@ -1,6 +1,6 @@
-// leads tablosunu oluşturur (idempotent). Hem `npm run db:migrate` hem de sunucu
-// açılışı bunu kullanır — böylece Railway'de elle migration çalıştırmak gerekmez.
-// Şema referansı: db/schema.js ve db/migrations/0001_init.sql ile aynı yapıdır.
+// leads + products tablolarını oluşturur (idempotent). Hem `npm run db:migrate`
+// hem de sunucu açılışı bunu kullanır — böylece Railway'de elle migration gerekmez.
+// Şema referansı: db/schema.js ve db/migrations/*.sql ile aynı yapıdadır.
 import { hasDb, sql } from "./index.js";
 
 export async function ensureSchema() {
@@ -18,7 +18,26 @@ export async function ensureSchema() {
       created_at  timestamp DEFAULT now()
     )
   `;
+  // Sonradan eklenen kolon — mevcut Railway tablosuna güvenle uygula.
+  await sql`ALTER TABLE leads ADD COLUMN IF NOT EXISTS brand text NOT NULL DEFAULT 'organizasyon'`;
   await sql`CREATE INDEX IF NOT EXISTS leads_created_at_idx ON leads (created_at DESC)`;
+
+  // Organizasyon ürün kataloğu — görsel WebP olarak bytea'da.
+  await sql`
+    CREATE TABLE IF NOT EXISTS products (
+      id          serial PRIMARY KEY,
+      name        text NOT NULL,
+      category    text,
+      price       text,
+      description text,
+      image_type  text,
+      image_data  bytea,
+      active      boolean NOT NULL DEFAULT true,
+      sort_order  integer NOT NULL DEFAULT 0,
+      created_at  timestamp DEFAULT now()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS products_sort_idx ON products (active, sort_order, id)`;
 
   return true;
 }

@@ -1,19 +1,37 @@
-// Lead (teklif formu) API + şifreli admin paneli (/panel).
-// DATABASE_URL varsa Railway PostgreSQL'e, yoksa bellek-içi geçici diziye yazar.
+// Lead (teklif formu) API + ürün kataloğu + şifreli admin paneli (/panel).
+// DATABASE_URL varsa Railway PostgreSQL'e, yoksa bellek-içi geçici depoya yazar.
 import crypto from "crypto";
+import multer from "multer";
+import sharp from "sharp";
 import { hasDb, sql } from "../db/index.js";
 
 const isProduction = process.env.NODE_ENV === "production";
 
-// DATABASE_URL yokken geliştirmede formun çalışması için geçici bellek deposu.
+// DATABASE_URL yokken geliştirmede çalışması için geçici bellek depoları.
 // Sunucu yeniden başlayınca sıfırlanır (kalıcı DEĞİL) — sadece lokal deneme içindir.
 const memoryLeads = [];
-let memoryId = 1;
+let memoryLeadId = 1;
+const memoryProducts = [];
+let memoryProductId = 1;
 
 const VALID_STATUS = new Set(["new", "contacted", "done"]);
+const VALID_BRAND = new Set(["organizasyon", "kuafor"]);
+
+// Görsel yükleme: bellekte tut, sharp ile WebP'ye sıkıştır, DB'de bytea sakla.
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 8 * 1024 * 1024 }, // 8MB ham üst sınır
+});
+
+async function toWebp(buffer) {
+  return sharp(buffer)
+    .rotate() // EXIF yönünü uygula
+    .resize({ width: 1200, height: 1200, fit: "inside", withoutEnlargement: true })
+    .webp({ quality: 82 })
+    .toBuffer();
+}
 
 // Basit bellek-içi IP hız sınırı — public form spam koruması.
-// Tek instance için yeterli; çok-instance ölçekte Redis'e taşınmalı.
 const RATE_WINDOW_MS = 60 * 1000;
 const RATE_MAX = 5; // dakikada IP başına en fazla 5 gönderim
 const rateHits = new Map();
@@ -28,7 +46,6 @@ function rateLimited(ip) {
   const hits = (rateHits.get(ip) || []).filter((t) => now - t < RATE_WINDOW_MS);
   hits.push(now);
   rateHits.set(ip, hits);
-  // Map'in sınırsız büyümesini engelle: ara sıra eski kayıtları temizle.
   if (rateHits.size > 5000) {
     for (const [key, times] of rateHits) {
       if (!times.some((t) => now - t < RATE_WINDOW_MS)) rateHits.delete(key);
@@ -64,8 +81,21 @@ function clean(value, max) {
   return String(value).trim().slice(0, max);
 }
 
+function toInt(value, fallback = 0) {
+  const n = parseInt(value, 10);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function toBool(value) {
+  if (typeof value === "boolean") return value;
+  const s = String(value).toLowerCase();
+  return s === "true" || s === "1" || s === "on" || s === "yes";
+}
+
 export function mountApi(app) {
-  // --- Public: teklif formu ---
+  // ============================================================
+  // Public: teklif formu (organizasyon + kuaför)
+  // ============================================================
   app.post("/api/lead", async (req, res) => {
     if (rateLimited(clientIp(req))) {
       res.status(429).json({ ok: false, error: "Çok fazla istek. Lütfen biraz sonra tekrar deneyin." });
@@ -77,22 +107,25 @@ export function mountApi(app) {
       res.status(400).json({ ok: false, error: "Ad Soyad gerekli." });
       return;
     }
+    const brandRaw = clean(body.brand, 20).toLowerCase();
+    const brand = VALID_BRAND.has(brandRaw) ? brandRaw : "organizasyon";
     const lead = {
       name,
       phone: clean(body.phone, 40) || null,
       eventType: clean(body.type ?? body.eventType, 80) || null,
       eventDate: clean(body.date ?? body.eventDate, 20) || null,
       message: clean(body.message, 4000) || null,
+      brand,
     };
     try {
       if (hasDb) {
         await sql`
-          INSERT INTO leads (name, phone, event_type, event_date, message)
-          VALUES (${lead.name}, ${lead.phone}, ${lead.eventType}, ${lead.eventDate}, ${lead.message})
+          INSERT INTO leads (name, phone, event_type, event_date, message, brand)
+          VALUES (${lead.name}, ${lead.phone}, ${lead.eventType}, ${lead.eventDate}, ${lead.message}, ${lead.brand})
         `;
       } else {
         memoryLeads.unshift({
-          id: memoryId++,
+          id: memoryLeadId++,
           ...lead,
           status: "new",
           createdAt: new Date().toISOString(),
@@ -105,7 +138,68 @@ export function mountApi(app) {
     }
   });
 
-  // --- Admin oturum ---
+  // ============================================================
+  // Public: ürün kataloğu (organizasyon)
+  // ============================================================
+  app.get("/api/products", async (req, res) => {
+    try {
+      if (hasDb) {
+        const rows = await sql`
+          SELECT id, name, category, price, description, sort_order AS "sortOrder",
+                 (image_data IS NOT NULL) AS "hasImage"
+          FROM products
+          WHERE active = true
+          ORDER BY sort_order ASC, id ASC
+        `;
+        res.json({ items: rows });
+        return;
+      }
+      const items = memoryProducts
+        .filter((p) => p.active)
+        .sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id)
+        .map(({ imageBuffer, imageType, ...rest }) => ({ ...rest, hasImage: Boolean(imageBuffer) }));
+      res.json({ items });
+    } catch (err) {
+      console.error("ürün listesi hatası:", err);
+      res.status(500).json({ ok: false, error: "Ürünler alınamadı." });
+    }
+  });
+
+  app.get("/api/products/:id/image", async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) {
+      res.status(400).end();
+      return;
+    }
+    try {
+      if (hasDb) {
+        const [row] = await sql`SELECT image_type, image_data FROM products WHERE id = ${id}`;
+        if (!row || !row.image_data) {
+          res.status(404).end();
+          return;
+        }
+        res.setHeader("Content-Type", row.image_type || "image/webp");
+        res.setHeader("Cache-Control", "public, max-age=86400");
+        res.end(Buffer.from(row.image_data));
+        return;
+      }
+      const p = memoryProducts.find((x) => x.id === id);
+      if (!p || !p.imageBuffer) {
+        res.status(404).end();
+        return;
+      }
+      res.setHeader("Content-Type", p.imageType || "image/webp");
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      res.end(p.imageBuffer);
+    } catch (err) {
+      console.error("ürün görseli hatası:", err);
+      res.status(500).end();
+    }
+  });
+
+  // ============================================================
+  // Admin: oturum
+  // ============================================================
   app.get("/api/admin/session", requireAdmin, (req, res) => {
     res.json({ ok: true });
   });
@@ -133,13 +227,15 @@ export function mountApi(app) {
     res.status(204).end();
   });
 
-  // --- Admin: lead yönetimi ---
+  // ============================================================
+  // Admin: lead yönetimi
+  // ============================================================
   app.get("/api/admin/leads", requireAdmin, async (req, res) => {
     try {
       if (hasDb) {
         const rows = await sql`
           SELECT id, name, phone, event_type AS "eventType", event_date AS "eventDate",
-                 message, status, created_at AS "createdAt"
+                 message, brand, status, created_at AS "createdAt"
           FROM leads ORDER BY created_at DESC NULLS LAST, id DESC
         `;
         res.json({ items: rows, db: true });
@@ -193,6 +289,148 @@ export function mountApi(app) {
     }
   });
 
+  // ============================================================
+  // Admin: ürün yönetimi
+  // ============================================================
+  app.get("/api/admin/products", requireAdmin, async (req, res) => {
+    try {
+      if (hasDb) {
+        const rows = await sql`
+          SELECT id, name, category, price, description, active, sort_order AS "sortOrder",
+                 (image_data IS NOT NULL) AS "hasImage", created_at AS "createdAt"
+          FROM products ORDER BY sort_order ASC, id ASC
+        `;
+        res.json({ items: rows });
+        return;
+      }
+      const items = memoryProducts
+        .slice()
+        .sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id)
+        .map(({ imageBuffer, ...rest }) => ({ ...rest, hasImage: Boolean(imageBuffer) }));
+      res.json({ items });
+    } catch (err) {
+      console.error("ürün listesi (admin) hatası:", err);
+      res.status(500).json({ ok: false, error: "Liste alınamadı." });
+    }
+  });
+
+  app.post("/api/admin/products", requireAdmin, upload.single("image"), async (req, res) => {
+    const body = req.body || {};
+    const name = clean(body.name, 160);
+    if (!name) {
+      res.status(400).json({ ok: false, error: "Ürün adı gerekli." });
+      return;
+    }
+    const data = {
+      name,
+      category: clean(body.category, 80) || null,
+      price: clean(body.price, 60) || null,
+      description: clean(body.description, 2000) || null,
+      active: body.active === undefined ? true : toBool(body.active),
+      sortOrder: toInt(body.sortOrder, 0),
+    };
+    try {
+      let imageBuffer = null;
+      let imageType = null;
+      if (req.file?.buffer) {
+        imageBuffer = await toWebp(req.file.buffer);
+        imageType = "image/webp";
+      }
+      if (hasDb) {
+        const [row] = await sql`
+          INSERT INTO products (name, category, price, description, image_type, image_data, active, sort_order)
+          VALUES (${data.name}, ${data.category}, ${data.price}, ${data.description},
+                  ${imageType}, ${imageBuffer}, ${data.active}, ${data.sortOrder})
+          RETURNING id
+        `;
+        res.json({ ok: true, id: row.id });
+      } else {
+        const product = { id: memoryProductId++, ...data, imageType, imageBuffer, createdAt: new Date().toISOString() };
+        memoryProducts.push(product);
+        res.json({ ok: true, id: product.id });
+      }
+    } catch (err) {
+      console.error("ürün ekleme hatası:", err);
+      res.status(500).json({ ok: false, error: "Ürün eklenemedi." });
+    }
+  });
+
+  app.patch("/api/admin/products/:id", requireAdmin, upload.single("image"), async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) {
+      res.status(400).json({ ok: false, error: "Geçersiz istek." });
+      return;
+    }
+    const body = req.body || {};
+    const name = clean(body.name, 160);
+    if (!name) {
+      res.status(400).json({ ok: false, error: "Ürün adı gerekli." });
+      return;
+    }
+    const data = {
+      name,
+      category: clean(body.category, 80) || null,
+      price: clean(body.price, 60) || null,
+      description: clean(body.description, 2000) || null,
+      active: body.active === undefined ? true : toBool(body.active),
+      sortOrder: toInt(body.sortOrder, 0),
+    };
+    try {
+      let imageBuffer = null;
+      if (req.file?.buffer) imageBuffer = await toWebp(req.file.buffer);
+
+      if (hasDb) {
+        if (imageBuffer) {
+          await sql`
+            UPDATE products SET name = ${data.name}, category = ${data.category}, price = ${data.price},
+              description = ${data.description}, active = ${data.active}, sort_order = ${data.sortOrder},
+              image_type = 'image/webp', image_data = ${imageBuffer}
+            WHERE id = ${id}
+          `;
+        } else {
+          await sql`
+            UPDATE products SET name = ${data.name}, category = ${data.category}, price = ${data.price},
+              description = ${data.description}, active = ${data.active}, sort_order = ${data.sortOrder}
+            WHERE id = ${id}
+          `;
+        }
+      } else {
+        const p = memoryProducts.find((x) => x.id === id);
+        if (p) {
+          Object.assign(p, data);
+          if (imageBuffer) {
+            p.imageBuffer = imageBuffer;
+            p.imageType = "image/webp";
+          }
+        }
+      }
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("ürün güncelleme hatası:", err);
+      res.status(500).json({ ok: false, error: "Güncellenemedi." });
+    }
+  });
+
+  app.delete("/api/admin/products/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) {
+      res.status(400).json({ ok: false, error: "Geçersiz istek." });
+      return;
+    }
+    try {
+      if (hasDb) {
+        await sql`DELETE FROM products WHERE id = ${id}`;
+      } else {
+        const i = memoryProducts.findIndex((x) => x.id === id);
+        if (i >= 0) memoryProducts.splice(i, 1);
+      }
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("ürün silme hatası:", err);
+      res.status(500).json({ ok: false, error: "Silinemedi." });
+    }
+  });
+
   // --- Yönetim paneli (kendi kendine yeten tek HTML sayfa) ---
   app.get("/panel", (req, res) => {
     res.type("html").send(PANEL_HTML);
@@ -211,42 +449,87 @@ const PANEL_HTML = `<!doctype html>
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--text); font-family:'Jost',system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
   a { color:var(--gold-soft); }
-  .wrap { max-width:1040px; margin:0 auto; padding:28px 20px 80px; }
-  header { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:24px; }
+  .wrap { max-width:1080px; margin:0 auto; padding:28px 20px 90px; }
+  header { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:20px; }
   .brand { display:flex; align-items:center; gap:10px; font-weight:600; letter-spacing:.5px; }
   .brand .dot { width:12px; height:12px; border-radius:50%; background:var(--gold); box-shadow:0 0 14px var(--gold); }
   h1 { font-size:18px; margin:0; }
   .btn { background:var(--gold); color:#1a1200; border:none; padding:10px 16px; border-radius:8px; font-weight:600; cursor:pointer; font-size:14px; }
   .btn.ghost { background:transparent; color:var(--muted); border:1px solid var(--line); }
+  .btn.small { padding:7px 12px; font-size:13px; }
   .btn:hover { filter:brightness(1.05); }
   .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:22px; }
   .login { max-width:380px; margin:12vh auto 0; }
   .login h2 { margin:0 0 6px; font-size:20px; }
   .login p { color:var(--muted); margin:0 0 20px; font-size:14px; }
-  input, select { width:100%; padding:11px 12px; border-radius:8px; border:1px solid var(--line); background:#100f0c; color:var(--text); font-size:14px; }
+  input, select, textarea { width:100%; padding:11px 12px; border-radius:8px; border:1px solid var(--line); background:#100f0c; color:var(--text); font-size:14px; font-family:inherit; }
+  textarea { resize:vertical; min-height:70px; }
+  label.fl { display:block; font-size:12px; color:var(--muted); margin:12px 0 5px; text-transform:uppercase; letter-spacing:.5px; }
+  .tabs { display:flex; gap:8px; margin-bottom:18px; }
+  .tab { padding:9px 18px; border-radius:999px; border:1px solid var(--line); background:transparent; color:var(--muted); cursor:pointer; font-size:14px; font-weight:500; }
+  .tab.active { background:var(--gold); color:#1a1200; border-color:var(--gold); }
   .stats { display:flex; gap:12px; margin-bottom:18px; flex-wrap:wrap; }
-  .stat { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 18px; min-width:110px; }
+  .stat { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 18px; min-width:104px; }
   .stat b { display:block; font-size:22px; color:var(--gold-soft); }
   .stat span { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; }
   table { width:100%; border-collapse:collapse; font-size:14px; }
   th, td { text-align:left; padding:12px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
   th { color:var(--muted); font-weight:500; font-size:12px; text-transform:uppercase; letter-spacing:.6px; }
-  td .msg { color:var(--muted); max-width:260px; }
+  td .msg { color:var(--muted); max-width:240px; }
   .row-status { padding:6px 8px; font-size:13px; }
-  .del { color:#e08a8a; background:none; border:none; cursor:pointer; font-size:13px; }
+  .del { color:#e08a8a; background:none; border:none; cursor:pointer; font-size:13px; padding:0; }
+  .edit { color:var(--gold-soft); background:none; border:none; cursor:pointer; font-size:13px; padding:0; margin-right:12px; }
   .empty { text-align:center; color:var(--muted); padding:40px 0; }
   .err { color:#e08a8a; font-size:13px; min-height:18px; margin-top:8px; }
   .badge { font-size:11px; padding:2px 8px; border-radius:999px; border:1px solid var(--line); color:var(--muted); }
+  .badge.org { color:var(--gold-soft); border-color:rgba(227,198,125,.4); }
+  .badge.kuafor { color:#e0b3c8; border-color:rgba(224,179,200,.4); }
+  .badge.off { color:#c88; }
   .note { color:var(--muted); font-size:12px; margin-top:14px; }
   .tablewrap { overflow-x:auto; }
+  .thumb { width:52px; height:52px; border-radius:8px; object-fit:cover; background:#100f0c; border:1px solid var(--line); }
+  .prodform { display:grid; grid-template-columns:1fr 1fr; gap:12px 16px; margin-top:6px; }
+  .prodform .full { grid-column:1 / -1; }
+  .modal { position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; align-items:flex-start; justify-content:center; padding:5vh 16px; z-index:50; overflow:auto; }
+  .modal.show { display:flex; }
+  .modal .card { width:min(560px,100%); }
+  .row-actions { white-space:nowrap; }
+  @media (max-width:560px){ .prodform { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
 <div class="wrap">
   <div id="app"></div>
 </div>
+
+<div class="modal" id="modal">
+  <div class="card">
+    <h2 id="pfTitle" style="margin:0 0 4px;font-size:18px">Ürün</h2>
+    <div class="err" id="pfErr"></div>
+    <form id="pf" class="prodform">
+      <div><label class="fl">Ürün Adı *</label><input name="name" required maxlength="160" /></div>
+      <div><label class="fl">Kategori</label><input name="category" maxlength="80" placeholder="Balon Konsepti / Çiçek..." /></div>
+      <div><label class="fl">Fiyat</label><input name="price" maxlength="60" placeholder="₺350 / Talep üzerine" /></div>
+      <div><label class="fl">Sıra</label><input name="sortOrder" type="number" value="0" /></div>
+      <div class="full"><label class="fl">Açıklama</label><textarea name="description" maxlength="2000"></textarea></div>
+      <div class="full"><label class="fl">Görsel (yükle)</label><input name="image" type="file" accept="image/*" /></div>
+      <div class="full" style="display:flex;align-items:center;gap:8px">
+        <input type="checkbox" name="active" id="pfActive" checked style="width:auto" />
+        <label for="pfActive" style="margin:0;color:var(--text);font-size:14px">Sitede yayında</label>
+      </div>
+      <div class="full" style="display:flex;gap:10px;margin-top:6px">
+        <button type="submit" class="btn" id="pfSave">Kaydet</button>
+        <button type="button" class="btn ghost" id="pfCancel">İptal</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
   var app = document.getElementById("app");
+  var modal = document.getElementById("modal");
+  var view = "leads"; // leads | products
+  var editingId = null;
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
@@ -257,6 +540,7 @@ const PANEL_HTML = `<!doctype html>
     return fetch(path, Object.assign({ headers: { "Content-Type": "application/json" } }, opts));
   }
   var STATUS = { "new":"Yeni", "contacted":"Arandı", "done":"Tamamlandı" };
+  var BRAND = { "organizasyon":"Organizasyon", "kuafor":"Kuaför" };
 
   function renderLogin(msg) {
     app.innerHTML =
@@ -267,9 +551,8 @@ const PANEL_HTML = `<!doctype html>
         '<div class="err" id="err">' + esc(msg || "") + '</div>' +
         '<button class="btn" style="width:100%;margin-top:6px" id="loginBtn">Giriş</button>' +
       '</div>';
-    var pw = document.getElementById("pw");
     document.getElementById("loginBtn").onclick = doLogin;
-    pw.onkeydown = function (e) { if (e.key === "Enter") doLogin(); };
+    document.getElementById("pw").onkeydown = function (e) { if (e.key === "Enter") doLogin(); };
   }
 
   function doLogin() {
@@ -287,6 +570,25 @@ const PANEL_HTML = `<!doctype html>
     api("/api/admin/logout", { method:"POST" }).then(function () { renderLogin(""); });
   }
 
+  function shell(inner) {
+    return '<header>' +
+        '<div class="brand"><span class="dot"></span><h1>Gold Clover — Panel</h1></div>' +
+        '<button class="btn ghost small" id="logoutBtn">Çıkış</button>' +
+      '</header>' +
+      '<div class="tabs">' +
+        '<button class="tab ' + (view==="leads"?"active":"") + '" data-view="leads">Talepler</button>' +
+        '<button class="tab ' + (view==="products"?"active":"") + '" data-view="products">Ürünler</button>' +
+      '</div>' + inner;
+  }
+
+  function wireShell() {
+    document.getElementById("logoutBtn").onclick = logout;
+    Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (t) {
+      t.onclick = function () { view = t.getAttribute("data-view"); load(); };
+    });
+  }
+
+  // ---------- Talepler ----------
   function statusSelect(lead) {
     var opts = "";
     for (var key in STATUS) {
@@ -294,7 +596,6 @@ const PANEL_HTML = `<!doctype html>
     }
     return '<select class="row-status" data-id="' + lead.id + '">' + opts + '</select>';
   }
-
   function fmtDate(iso) {
     if (!iso) return "";
     var d = new Date(iso);
@@ -302,26 +603,22 @@ const PANEL_HTML = `<!doctype html>
     return d.toLocaleDateString("tr-TR") + " " + d.toLocaleTimeString("tr-TR", { hour:"2-digit", minute:"2-digit" });
   }
 
-  function render(items, db) {
+  function renderLeads(items, db) {
     var counts = { "new":0, "contacted":0, "done":0 };
     items.forEach(function (l) { if (counts[l.status] != null) counts[l.status]++; });
-
     var rows = items.map(function (l) {
+      var b = l.brand === "kuafor" ? "kuafor" : "org";
       return '<tr>' +
-        '<td>' + esc(fmtDate(l.createdAt)) + '</td>' +
+        '<td>' + esc(fmtDate(l.createdAt)) + '<br><span class="badge ' + b + '">' + esc(BRAND[l.brand] || "Organizasyon") + '</span></td>' +
         '<td><strong>' + esc(l.name) + '</strong>' + (l.phone ? '<br><a href="tel:' + esc(l.phone) + '">' + esc(l.phone) + '</a>' : '') + '</td>' +
         '<td>' + esc(l.eventType || "-") + (l.eventDate ? '<br><span class="badge">' + esc(l.eventDate) + '</span>' : '') + '</td>' +
         '<td class="msg">' + esc(l.message || "-") + '</td>' +
         '<td>' + statusSelect(l) + '</td>' +
-        '<td><button class="del" data-del="' + l.id + '">Sil</button></td>' +
+        '<td class="row-actions"><button class="del" data-del="' + l.id + '">Sil</button></td>' +
       '</tr>';
     }).join("");
 
-    app.innerHTML =
-      '<header>' +
-        '<div class="brand"><span class="dot"></span><h1>Gold Clover — Talepler</h1></div>' +
-        '<button class="btn ghost" id="logoutBtn">Çıkış</button>' +
-      '</header>' +
+    app.innerHTML = shell(
       '<div class="stats">' +
         '<div class="stat"><b>' + items.length + '</b><span>Toplam</span></div>' +
         '<div class="stat"><b>' + counts["new"] + '</b><span>Yeni</span></div>' +
@@ -330,35 +627,128 @@ const PANEL_HTML = `<!doctype html>
       '</div>' +
       '<div class="card tablewrap">' +
         (items.length
-          ? '<table><thead><tr><th>Tarih</th><th>Ad / Telefon</th><th>Tür / Tarih</th><th>Mesaj</th><th>Durum</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>'
+          ? '<table><thead><tr><th>Tarih / Marka</th><th>Ad / Telefon</th><th>Tür / Tarih</th><th>Mesaj</th><th>Durum</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>'
           : '<div class="empty">Henüz talep yok.</div>') +
       '</div>' +
-      (db ? '' : '<div class="note">⚠️ DATABASE_URL tanımlı değil — kayıtlar geçici bellekte tutuluyor, sunucu yeniden başlayınca silinir.</div>');
-
-    document.getElementById("logoutBtn").onclick = logout;
+      (db ? '' : '<div class="note">⚠️ DATABASE_URL tanımlı değil — kayıtlar geçici bellekte tutuluyor, sunucu yeniden başlayınca silinir.</div>')
+    );
+    wireShell();
     Array.prototype.forEach.call(document.querySelectorAll(".row-status"), function (sel) {
       sel.onchange = function () { setStatus(sel.getAttribute("data-id"), sel.value); };
     });
     Array.prototype.forEach.call(document.querySelectorAll("[data-del]"), function (btn) {
-      btn.onclick = function () { del(btn.getAttribute("data-del")); };
+      btn.onclick = function () { delLead(btn.getAttribute("data-del")); };
     });
   }
 
   function setStatus(id, status) {
     api("/api/admin/leads/" + id, { method:"PATCH", body: JSON.stringify({ status: status }) });
   }
-  function del(id) {
+  function delLead(id) {
     if (!confirm("Bu talep silinsin mi?")) return;
     api("/api/admin/leads/" + id, { method:"DELETE" }).then(function () { load(); });
   }
 
+  // ---------- Ürünler ----------
+  function renderProducts(items) {
+    var rows = items.map(function (p) {
+      var img = p.hasImage ? '<img class="thumb" src="/api/products/' + p.id + '/image?v=' + Date.now() + '" alt="" />' : '<div class="thumb"></div>';
+      return '<tr>' +
+        '<td>' + img + '</td>' +
+        '<td><strong>' + esc(p.name) + '</strong>' + (p.category ? '<br><span class="badge">' + esc(p.category) + '</span>' : '') + '</td>' +
+        '<td>' + esc(p.price || "-") + '</td>' +
+        '<td>' + (p.active ? '<span class="badge org">Yayında</span>' : '<span class="badge off">Gizli</span>') + '</td>' +
+        '<td>' + esc(p.sortOrder) + '</td>' +
+        '<td class="row-actions"><button class="edit" data-edit="' + p.id + '">Düzenle</button><button class="del" data-delp="' + p.id + '">Sil</button></td>' +
+      '</tr>';
+    }).join("");
+
+    app.innerHTML = shell(
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+        '<div class="stat" style="min-width:0"><b>' + items.length + '</b><span>Ürün</span></div>' +
+        '<button class="btn" id="addProd">+ Yeni Ürün</button>' +
+      '</div>' +
+      '<div class="card tablewrap">' +
+        (items.length
+          ? '<table><thead><tr><th>Görsel</th><th>Ad / Kategori</th><th>Fiyat</th><th>Durum</th><th>Sıra</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>'
+          : '<div class="empty">Henüz ürün yok. “+ Yeni Ürün” ile ekleyin.</div>') +
+      '</div>'
+    );
+    wireShell();
+    document.getElementById("addProd").onclick = function () { openProduct(null); };
+    Array.prototype.forEach.call(document.querySelectorAll("[data-edit]"), function (b) {
+      b.onclick = function () { openProduct(items.find(function(x){ return String(x.id)===b.getAttribute("data-edit"); })); };
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-delp]"), function (b) {
+      b.onclick = function () { delProduct(b.getAttribute("data-delp")); };
+    });
+  }
+
+  function openProduct(p) {
+    editingId = p ? p.id : null;
+    document.getElementById("pfTitle").textContent = p ? "Ürünü Düzenle" : "Yeni Ürün";
+    document.getElementById("pfErr").textContent = "";
+    var f = document.getElementById("pf");
+    f.name.value = p ? (p.name || "") : "";
+    f.category.value = p ? (p.category || "") : "";
+    f.price.value = p ? (p.price || "") : "";
+    f.sortOrder.value = p ? (p.sortOrder || 0) : 0;
+    f.description.value = p ? (p.description || "") : "";
+    f.image.value = "";
+    f.active.checked = p ? !!p.active : true;
+    modal.classList.add("show");
+  }
+  function closeProduct() { modal.classList.remove("show"); }
+
+  function delProduct(id) {
+    if (!confirm("Bu ürün silinsin mi?")) return;
+    api("/api/admin/products/" + id, { method:"DELETE" }).then(function () { load(); });
+  }
+
+  document.getElementById("pfCancel").onclick = closeProduct;
+  modal.onclick = function (e) { if (e.target === modal) closeProduct(); };
+  document.getElementById("pf").onsubmit = function (e) {
+    e.preventDefault();
+    var f = e.currentTarget;
+    var fd = new FormData();
+    fd.append("name", f.name.value);
+    fd.append("category", f.category.value);
+    fd.append("price", f.price.value);
+    fd.append("sortOrder", f.sortOrder.value || "0");
+    fd.append("description", f.description.value);
+    fd.append("active", f.active.checked ? "true" : "false");
+    if (f.image.files[0]) fd.append("image", f.image.files[0]);
+    var url = editingId ? "/api/admin/products/" + editingId : "/api/admin/products";
+    var method = editingId ? "PATCH" : "POST";
+    document.getElementById("pfSave").disabled = true;
+    fetch(url, { method: method, body: fd })
+      .then(function (r) { return r.json().then(function (j) { return { ok:r.ok, j:j }; }); })
+      .then(function (res) {
+        document.getElementById("pfSave").disabled = false;
+        if (res.ok) { closeProduct(); load(); }
+        else document.getElementById("pfErr").textContent = (res.j && res.j.error) || "Kaydedilemedi.";
+      })
+      .catch(function () {
+        document.getElementById("pfSave").disabled = false;
+        document.getElementById("pfErr").textContent = "Bağlantı hatası.";
+      });
+  };
+
+  // ---------- Yükleme ----------
   function load() {
-    api("/api/admin/leads").then(function (r) {
-      if (r.status === 401) { renderLogin(""); return null; }
-      return r.json();
-    }).then(function (data) {
-      if (data) render(data.items || [], data.db);
-    }).catch(function () { renderLogin("Bağlantı hatası."); });
+    if (view === "products") {
+      api("/api/admin/products").then(function (r) {
+        if (r.status === 401) { renderLogin(""); return null; }
+        return r.json();
+      }).then(function (data) { if (data) renderProducts(data.items || []); })
+        .catch(function () { renderLogin("Bağlantı hatası."); });
+    } else {
+      api("/api/admin/leads").then(function (r) {
+        if (r.status === 401) { renderLogin(""); return null; }
+        return r.json();
+      }).then(function (data) { if (data) renderLeads(data.items || [], data.db); })
+        .catch(function () { renderLogin("Bağlantı hatası."); });
+    }
   }
 
   load();

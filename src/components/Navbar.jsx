@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 const LINKS = [
   ['Hakkımızda', '#about'],
   ['Hizmetler', '#services'],
   ['Süreç', '#process'],
   ['Galeri', '#gallery'],
+  ['Ürünler', '#urunler'],
   ['İletişim', '#contact'],
 ]
 
@@ -22,15 +24,16 @@ export default function Navbar() {
   return (
     <header className={`nav ${scrolled ? 'nav--solid' : ''}`}>
       <div className="nav__inner container">
-        <a href="#top" className="nav__brand" onClick={() => setOpen(false)}>
+        <Link to="/" className="nav__brand" onClick={() => setOpen(false)}>
           <img src="/clover.svg" alt="" className="nav__logo" />
           <span className="nav__name display">Gold Clover</span>
-        </a>
+        </Link>
 
         <nav className={`nav__links ${open ? 'nav__links--open' : ''}`}>
           {LINKS.map(([label, href]) => (
             <a key={href} href={href} onClick={() => setOpen(false)}>{label}</a>
           ))}
+          <Link to="/kuafor" className="nav__switch" onClick={() => setOpen(false)}>Kuaför</Link>
           <a href="#contact" className="btn btn-gold nav__cta" onClick={() => setOpen(false)}>Teklif Al</a>
         </nav>
 

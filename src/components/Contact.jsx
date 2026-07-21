@@ -1,5 +1,10 @@
 import { useState } from 'react'
 
+const MAP_SRC = `https://maps.google.com/maps?q=${encodeURIComponent(
+  'Bir Damla Kuaför & Güzellik Salonu, Balgat, Ankara'
+)}&z=15&output=embed`
+const MAP_LINK = 'https://share.google/uOBZCIBSEmOiR2J1n'
+
 export default function Contact() {
   const [status, setStatus] = useState('idle') // idle | sending | sent | error
 
@@ -18,6 +23,7 @@ export default function Contact() {
           type: f.get('type') || '',
           date: f.get('date') || '',
           message: f.get('message') || '',
+          brand: 'organizasyon',
         }),
       })
       if (!res.ok) throw new Error('request failed')
@@ -42,15 +48,14 @@ export default function Contact() {
           <ul className="contact__list reveal">
             <li>
               <PinIcon />
-              <div><strong>Ankara</strong><span>Çankaya · Türkiye</span></div>
+              <div><strong>Ankara</strong><span>Türkiye</span></div>
             </li>
             <li>
               <PhoneIcon />
-              <div><strong>+90 (312) 000 00 00</strong><span>Hafta içi 09:00 – 19:00</span></div>
-            </li>
-            <li>
-              <MailIcon />
-              <div><strong>hello@goldclover.com</strong><span>Teklif &amp; iş birlikleri</span></div>
+              <div>
+                <a href="tel:+905518625660"><strong>0551 862 56 60</strong></a>
+                <span>Telefon &amp; WhatsApp</span>
+              </div>
             </li>
             <li>
               <InstaIcon />
@@ -60,6 +65,19 @@ export default function Contact() {
               </div>
             </li>
           </ul>
+
+          <div className="contact__map reveal">
+            <iframe
+              title="Konum — Google Haritalar"
+              src={MAP_SRC}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              allowFullScreen
+            />
+            <a className="contact__maplink" href={MAP_LINK} target="_blank" rel="noreferrer">
+              Google Maps’te Aç →
+            </a>
+          </div>
         </div>
 
         <form className="contact__form reveal" onSubmit={handleSubmit}>
