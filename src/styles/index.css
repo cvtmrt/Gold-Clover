@@ -1,0 +1,135 @@
+/* ============================================================
+   GOLD CLOVER — Global Styles & Design Tokens
+   Palette: champagne gold + warm cream + clover emerald
+   ============================================================ */
+
+:root {
+  /* Surfaces */
+  --cream:        #FBF7EF;
+  --cream-2:      #F5ECDC;
+  --cream-3:      #EFE3CD;
+  --ink:          #241F18;   /* warm near-black */
+  --ink-2:        #3A3227;
+  --muted:        #8C7F68;
+
+  /* Gold */
+  --gold:         #B8892B;
+  --gold-light:   #E9C978;
+  --gold-soft:    #D8B25E;
+  --gold-grad:    linear-gradient(135deg, #E9C978 0%, #C79A3C 45%, #B8892B 100%);
+
+  /* Clover */
+  --clover:       #2F5741;
+  --clover-2:     #3E6B4F;
+
+  --border:       rgba(184, 137, 43, 0.22);
+  --shadow-soft:  0 24px 60px -28px rgba(59, 44, 12, 0.35);
+  --shadow-card:  0 30px 70px -34px rgba(59, 44, 12, 0.45);
+
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-script:  'Great Vibes', cursive;
+  --font-body:    'Jost', system-ui, sans-serif;
+
+  --ease:         cubic-bezier(0.22, 1, 0.36, 1);
+  --maxw:         1240px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--cream);
+  color: var(--ink);
+  font-weight: 300;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+body.intro-lock { overflow: hidden; height: 100vh; }
+
+img { max-width: 100%; display: block; }
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+/* ---- Typographic helpers ---- */
+.script {
+  font-family: var(--font-script);
+  font-weight: 400;
+  color: var(--gold);
+  line-height: 1;
+}
+.display {
+  font-family: var(--font-display);
+  font-weight: 500;
+  line-height: 1.08;
+  letter-spacing: 0.3px;
+}
+.eyebrow {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.text-gold {
+  background: var(--gold-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ---- Layout ---- */
+.container { width: min(92%, var(--maxw)); margin: 0 auto; }
+section { position: relative; }
+
+.section-head { text-align: center; max-width: 640px; margin: 0 auto 3.5rem; }
+.section-head .eyebrow { display: inline-block; margin-bottom: 1rem; }
+.section-head h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(2.1rem, 5vw, 3.5rem);
+  line-height: 1.1;
+  color: var(--ink);
+}
+.section-head p { margin-top: 1.1rem; color: var(--muted); font-size: 1.02rem; }
+
+.divider {
+  display: inline-flex; align-items: center; gap: 0.7rem;
+  color: var(--gold); margin: 0.4rem auto 0;
+}
+.divider::before, .divider::after {
+  content: ''; width: 46px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-soft));
+}
+.divider::after { background: linear-gradient(90deg, var(--gold-soft), transparent); }
+
+/* ---- Buttons ---- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
+  padding: 0.95rem 2.1rem;
+  font-size: 0.82rem; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase;
+  border-radius: 100px; transition: all 0.4s var(--ease);
+  min-height: 48px;
+}
+.btn-gold {
+  background: var(--gold-grad); color: #3a2c08;
+  box-shadow: 0 14px 30px -12px rgba(184, 137, 43, 0.6);
+}
+.btn-gold:hover { transform: translateY(-3px); box-shadow: 0 20px 40px -12px rgba(184, 137, 43, 0.75); }
+.btn-outline {
+  border: 1px solid var(--gold-soft); color: var(--ink); background: transparent;
+}
+.btn-outline:hover { background: var(--gold); color: #fff; border-color: var(--gold); transform: translateY(-3px); }
+
+/* ---- Reveal-on-scroll ---- */
+.reveal { opacity: 0; transform: translateY(38px); transition: opacity 0.9s var(--ease), transform 0.9s var(--ease); }
+.reveal.in { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1 !important; transform: none !important; transition: none; }
+  html { scroll-behavior: auto; }
+}
