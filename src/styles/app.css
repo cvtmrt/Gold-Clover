@@ -300,6 +300,8 @@
 }
 
 /* ---------- PRODUCTS (Ürünler) ---------- */
+.prodpage main { padding-top: 76px; } /* sabit navbar'ın altında kalmasın */
+.nav__links > a.is-active { color: var(--gold); }
 .products { padding: clamp(5rem, 10vw, 8.5rem) 0; background: linear-gradient(to bottom, var(--cream-3), var(--cream)); }
 .products__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; }
 .product { background: #fff; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: 0 20px 50px -34px rgba(59,44,12,0.4); transition: transform 0.5s var(--ease), box-shadow 0.5s var(--ease); display: flex; flex-direction: column; }

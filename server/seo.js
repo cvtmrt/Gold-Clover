@@ -80,6 +80,14 @@ const ROUTES = {
     ogImage: DEFAULT_OG,
     jsonLd: ORG_JSONLD,
   },
+  "/urunler": {
+    title: "Ürünler — Gold Clover Organizasyon | Balon Konsepti, Çiçek, Hediyelik",
+    description:
+      "Gold Clover ürünleri: balon konseptleri, butik çiçek aranjmanları ve özel hediyelikler. Ankara'da organizasyonunuzu tamamlayın.",
+    canonical: `${SITE}/urunler`,
+    ogImage: DEFAULT_OG,
+    jsonLd: ORG_JSONLD,
+  },
   "/kuafor": {
     title: "DS Önce Sen — Dilek Kuaför Balgat | Ankara Güzellik & Kişisel Bakım",
     description:

@@ -35,7 +35,7 @@ export default function Products() {
         {state === 'ready' && items.length > 0 && (
           <div className="products__grid">
             {items.map((p) => (
-              <article className="product reveal" key={p.id}>
+              <article className="product" key={p.id}>
                 <div className="product__media">
                   {p.hasImage ? (
                     <img src={`/api/products/${p.id}/image`} alt={p.name} loading="lazy" />
@@ -54,11 +54,14 @@ export default function Products() {
           </div>
         )}
 
+        {state === 'loading' && (
+          <p className="products__empty">Ürünler yükleniyor…</p>
+        )}
         {state === 'ready' && items.length === 0 && (
-          <p className="products__empty reveal">Ürünler çok yakında burada. 🍀</p>
+          <p className="products__empty">Ürünler çok yakında burada. 🍀</p>
         )}
         {state === 'error' && (
-          <p className="products__empty reveal">Ürünler şu an yüklenemedi.</p>
+          <p className="products__empty">Ürünler şu an yüklenemedi.</p>
         )}
       </div>
     </section>

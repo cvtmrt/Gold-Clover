@@ -1,34 +1,22 @@
 import Navbar from '../components/Navbar.jsx'
-import Hero from '../components/Hero.jsx'
-import About from '../components/About.jsx'
-import Services from '../components/Services.jsx'
-import Process from '../components/Process.jsx'
-import Testimonial from '../components/Testimonial.jsx'
-import Gallery from '../components/Gallery.jsx'
-import Contact from '../components/Contact.jsx'
+import Products from '../components/Products.jsx'
 import Footer from '../components/Footer.jsx'
 import useReveal from '../hooks/useReveal.js'
 import useDocumentMeta from '../hooks/useDocumentMeta.js'
 import '../styles/app.css'
 
-export default function OrganizasyonPage() {
+export default function ProductsPage() {
   useReveal(true)
   useDocumentMeta(
-    'Gold Clover Organizasyon — Ankara Etkinlik & Organizasyon',
-    "Söz, nişan, doğum günü, baby shower, balon konsepti ve özel kutlamalar. Ankara'da hayalinizdeki etkinliği kusursuz kurguluyoruz."
+    'Ürünler — Gold Clover Organizasyon | Balon Konsepti, Çiçek, Hediyelik',
+    'Gold Clover ürünleri: balon konseptleri, butik çiçek aranjmanları ve özel hediyelikler. Organizasyonunuzu tamamlayın.'
   )
 
   return (
-    <div className="site site--in">
+    <div className="site site--in prodpage">
       <Navbar />
       <main>
-        <Hero />
-        <About />
-        <Services />
-        <Process />
-        <Testimonial />
-        <Gallery />
-        <Contact />
+        <Products />
       </main>
       <Footer />
 
