@@ -95,6 +95,11 @@
 .k-gallery__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
 .k-tile { aspect-ratio: 4/5; border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--kline); }
 .k-tile span { font-family: var(--kfont-d); font-size: 2rem; color: var(--kgold); opacity: 0.4; letter-spacing: 2px; }
+.k-tile { position: relative; overflow: hidden; }
+.k-tile--photo { padding: 0; border-color: var(--kline); }
+.k-tile--photo img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.7s var(--kease); }
+.k-tile--photo:hover img { transform: scale(1.06); }
+.k-tile--photo figcaption { position: absolute; left: 0; right: 0; bottom: 0; padding: 0.7rem 0.9rem; font-size: 0.82rem; color: #fff; background: linear-gradient(to top, rgba(16,11,6,0.85), transparent); }
 .k-tile--0 { background: linear-gradient(150deg, #2c2016, #1a130d); }
 .k-tile--1 { background: linear-gradient(150deg, #3a291d, #211812); }
 .k-tile--2 { background: linear-gradient(150deg, #2a1f18, #17110c); }

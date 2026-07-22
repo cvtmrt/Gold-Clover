@@ -39,5 +39,19 @@ export async function ensureSchema() {
   `;
   await sql`CREATE INDEX IF NOT EXISTS products_sort_idx ON products (active, sort_order, id)`;
 
+  // Kuaför galeri fotoğrafları.
+  await sql`
+    CREATE TABLE IF NOT EXISTS gallery (
+      id          serial PRIMARY KEY,
+      caption     text,
+      image_type  text,
+      image_data  bytea,
+      active      boolean NOT NULL DEFAULT true,
+      sort_order  integer NOT NULL DEFAULT 0,
+      created_at  timestamp DEFAULT now()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS gallery_sort_idx ON gallery (active, sort_order, id)`;
+
   return true;
 }

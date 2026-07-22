@@ -43,3 +43,14 @@ export const products = pgTable("products", {
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+// Kuaför (DS Önce Sen) galeri fotoğrafları — panelden yönetilir, görsel bytea.
+export const gallery = pgTable("gallery", {
+  id: serial("id").primaryKey(),
+  caption: text("caption"),
+  imageType: text("image_type"),
+  imageData: bytea("image_data"),
+  active: boolean("active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});

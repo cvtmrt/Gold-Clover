@@ -13,6 +13,8 @@ const memoryLeads = [];
 let memoryLeadId = 1;
 const memoryProducts = [];
 let memoryProductId = 1;
+const memoryGallery = [];
+let memoryGalleryId = 1;
 
 const VALID_STATUS = new Set(["new", "contacted", "done"]);
 const VALID_BRAND = new Set(["organizasyon", "kuafor"]);
@@ -431,6 +433,142 @@ export function mountApi(app) {
     }
   });
 
+  // ============================================================
+  // Public: kuaför galeri
+  // ============================================================
+  app.get("/api/gallery", async (req, res) => {
+    try {
+      if (hasDb) {
+        const rows = await sql`
+          SELECT id, caption, sort_order AS "sortOrder", (image_data IS NOT NULL) AS "hasImage"
+          FROM gallery WHERE active = true ORDER BY sort_order ASC, id ASC
+        `;
+        res.json({ items: rows });
+        return;
+      }
+      const items = memoryGallery
+        .filter((g) => g.active)
+        .sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id)
+        .map(({ imageBuffer, imageType, ...rest }) => ({ ...rest, hasImage: Boolean(imageBuffer) }));
+      res.json({ items });
+    } catch (err) {
+      console.error("galeri listesi hatası:", err);
+      res.status(500).json({ ok: false, error: "Galeri alınamadı." });
+    }
+  });
+
+  app.get("/api/gallery/:id/image", async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) {
+      res.status(400).end();
+      return;
+    }
+    try {
+      if (hasDb) {
+        const [row] = await sql`SELECT image_type, image_data FROM gallery WHERE id = ${id}`;
+        if (!row || !row.image_data) {
+          res.status(404).end();
+          return;
+        }
+        res.setHeader("Content-Type", row.image_type || "image/webp");
+        res.setHeader("Cache-Control", "public, max-age=86400");
+        res.end(Buffer.from(row.image_data));
+        return;
+      }
+      const g = memoryGallery.find((x) => x.id === id);
+      if (!g || !g.imageBuffer) {
+        res.status(404).end();
+        return;
+      }
+      res.setHeader("Content-Type", g.imageType || "image/webp");
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      res.end(g.imageBuffer);
+    } catch (err) {
+      console.error("galeri görseli hatası:", err);
+      res.status(500).end();
+    }
+  });
+
+  // ============================================================
+  // Admin: kuaför galeri yönetimi
+  // ============================================================
+  app.get("/api/admin/gallery", requireAdmin, async (req, res) => {
+    try {
+      if (hasDb) {
+        const rows = await sql`
+          SELECT id, caption, active, sort_order AS "sortOrder",
+                 (image_data IS NOT NULL) AS "hasImage", created_at AS "createdAt"
+          FROM gallery ORDER BY sort_order ASC, id ASC
+        `;
+        res.json({ items: rows });
+        return;
+      }
+      const items = memoryGallery
+        .slice()
+        .sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id)
+        .map(({ imageBuffer, ...rest }) => ({ ...rest, hasImage: Boolean(imageBuffer) }));
+      res.json({ items });
+    } catch (err) {
+      console.error("galeri (admin) hatası:", err);
+      res.status(500).json({ ok: false, error: "Liste alınamadı." });
+    }
+  });
+
+  app.post("/api/admin/gallery", requireAdmin, upload.single("image"), async (req, res) => {
+    if (!req.file?.buffer) {
+      res.status(400).json({ ok: false, error: "Görsel gerekli." });
+      return;
+    }
+    const caption = clean(req.body?.caption, 200) || null;
+    const sortOrder = toInt(req.body?.sortOrder, 0);
+    try {
+      const imageBuffer = await toWebp(req.file.buffer);
+      if (hasDb) {
+        const [row] = await sql`
+          INSERT INTO gallery (caption, image_type, image_data, active, sort_order)
+          VALUES (${caption}, 'image/webp', ${imageBuffer}, true, ${sortOrder})
+          RETURNING id
+        `;
+        res.json({ ok: true, id: row.id });
+      } else {
+        const g = {
+          id: memoryGalleryId++,
+          caption,
+          imageType: "image/webp",
+          imageBuffer,
+          active: true,
+          sortOrder,
+          createdAt: new Date().toISOString(),
+        };
+        memoryGallery.push(g);
+        res.json({ ok: true, id: g.id });
+      }
+    } catch (err) {
+      console.error("galeri ekleme hatası:", err);
+      res.status(500).json({ ok: false, error: "Eklenemedi." });
+    }
+  });
+
+  app.delete("/api/admin/gallery/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) {
+      res.status(400).json({ ok: false, error: "Geçersiz istek." });
+      return;
+    }
+    try {
+      if (hasDb) {
+        await sql`DELETE FROM gallery WHERE id = ${id}`;
+      } else {
+        const i = memoryGallery.findIndex((x) => x.id === id);
+        if (i >= 0) memoryGallery.splice(i, 1);
+      }
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("galeri silme hatası:", err);
+      res.status(500).json({ ok: false, error: "Silinemedi." });
+    }
+  });
+
   // --- Yönetim paneli (kendi kendine yeten tek HTML sayfa) ---
   app.get("/panel", (req, res) => {
     res.type("html").send(PANEL_HTML);
@@ -488,6 +626,11 @@ const PANEL_HTML = `<!doctype html>
   .note { color:var(--muted); font-size:12px; margin-top:14px; }
   .tablewrap { overflow-x:auto; }
   .thumb { width:52px; height:52px; border-radius:8px; object-fit:cover; background:#100f0c; border:1px solid var(--line); }
+  .ggrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; }
+  .gcard { position:relative; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--card); }
+  .gthumb { width:100%; aspect-ratio:4/5; object-fit:cover; display:block; background:#100f0c; }
+  .gcap { padding:8px 10px; font-size:12px; color:var(--muted); }
+  .gdel { position:absolute; top:8px; right:8px; background:rgba(15,14,12,.8); border:1px solid var(--line); border-radius:6px; padding:4px 8px; color:#e08a8a; }
   .prodform { display:grid; grid-template-columns:1fr 1fr; gap:12px 16px; margin-top:6px; }
   .prodform .full { grid-column:1 / -1; }
   .modal { position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; align-items:flex-start; justify-content:center; padding:5vh 16px; z-index:50; overflow:auto; }
@@ -525,9 +668,26 @@ const PANEL_HTML = `<!doctype html>
   </div>
 </div>
 
+<div class="modal" id="gmodal">
+  <div class="card">
+    <h2 style="margin:0 0 4px;font-size:18px">Galeri Fotoğrafı</h2>
+    <div class="err" id="gfErr"></div>
+    <form id="gf" class="prodform">
+      <div class="full"><label class="fl">Fotoğraf *</label><input name="image" type="file" accept="image/*" required /></div>
+      <div><label class="fl">Açıklama (opsiyonel)</label><input name="caption" maxlength="200" placeholder="Saç · Gelin · Bakım..." /></div>
+      <div><label class="fl">Sıra</label><input name="sortOrder" type="number" value="0" /></div>
+      <div class="full" style="display:flex;gap:10px;margin-top:6px">
+        <button type="submit" class="btn" id="gfSave">Yükle</button>
+        <button type="button" class="btn ghost" id="gfCancel">İptal</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
   var app = document.getElementById("app");
   var modal = document.getElementById("modal");
+  var gmodal = document.getElementById("gmodal");
   var view = "leads"; // leads | products
   var editingId = null;
 
@@ -578,6 +738,7 @@ const PANEL_HTML = `<!doctype html>
       '<div class="tabs">' +
         '<button class="tab ' + (view==="leads"?"active":"") + '" data-view="leads">Talepler</button>' +
         '<button class="tab ' + (view==="products"?"active":"") + '" data-view="products">Ürünler</button>' +
+        '<button class="tab ' + (view==="gallery"?"active":"") + '" data-view="gallery">Kuaför Galeri</button>' +
       '</div>' + inner;
   }
 
@@ -734,6 +895,62 @@ const PANEL_HTML = `<!doctype html>
       });
   };
 
+  // ---------- Kuaför Galeri ----------
+  function renderGallery(items) {
+    var cards = items.map(function (g) {
+      var img = g.hasImage ? '<img class="gthumb" src="/api/gallery/' + g.id + '/image?v=' + Date.now() + '" alt="" />' : '<div class="gthumb"></div>';
+      return '<div class="gcard">' + img +
+        (g.caption ? '<div class="gcap">' + esc(g.caption) + '</div>' : '') +
+        '<button class="del gdel" data-delg="' + g.id + '">Sil</button>' +
+      '</div>';
+    }).join("");
+    app.innerHTML = shell(
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+        '<div class="stat" style="min-width:0"><b>' + items.length + '</b><span>Fotoğraf</span></div>' +
+        '<button class="btn" id="addG">+ Foto Ekle</button>' +
+      '</div>' +
+      (items.length ? '<div class="ggrid">' + cards + '</div>' : '<div class="card"><div class="empty">Henüz fotoğraf yok. “+ Foto Ekle” ile yükleyin.</div></div>')
+    );
+    wireShell();
+    document.getElementById("addG").onclick = openGallery;
+    Array.prototype.forEach.call(document.querySelectorAll("[data-delg]"), function (b) {
+      b.onclick = function () { delGallery(b.getAttribute("data-delg")); };
+    });
+  }
+  function openGallery() {
+    document.getElementById("gfErr").textContent = "";
+    document.getElementById("gf").reset();
+    gmodal.classList.add("show");
+  }
+  function closeGallery() { gmodal.classList.remove("show"); }
+  function delGallery(id) {
+    if (!confirm("Bu fotoğraf silinsin mi?")) return;
+    api("/api/admin/gallery/" + id, { method:"DELETE" }).then(function () { load(); });
+  }
+  document.getElementById("gfCancel").onclick = closeGallery;
+  gmodal.onclick = function (e) { if (e.target === gmodal) closeGallery(); };
+  document.getElementById("gf").onsubmit = function (e) {
+    e.preventDefault();
+    var f = e.currentTarget;
+    if (!f.image.files[0]) { document.getElementById("gfErr").textContent = "Fotoğraf seçin."; return; }
+    var fd = new FormData();
+    fd.append("image", f.image.files[0]);
+    fd.append("caption", f.caption.value);
+    fd.append("sortOrder", f.sortOrder.value || "0");
+    document.getElementById("gfSave").disabled = true;
+    fetch("/api/admin/gallery", { method:"POST", body: fd })
+      .then(function (r) { return r.json().then(function (j) { return { ok:r.ok, j:j }; }); })
+      .then(function (res) {
+        document.getElementById("gfSave").disabled = false;
+        if (res.ok) { closeGallery(); load(); }
+        else document.getElementById("gfErr").textContent = (res.j && res.j.error) || "Yüklenemedi.";
+      })
+      .catch(function () {
+        document.getElementById("gfSave").disabled = false;
+        document.getElementById("gfErr").textContent = "Bağlantı hatası.";
+      });
+  };
+
   // ---------- Yükleme ----------
   function load() {
     if (view === "products") {
@@ -741,6 +958,12 @@ const PANEL_HTML = `<!doctype html>
         if (r.status === 401) { renderLogin(""); return null; }
         return r.json();
       }).then(function (data) { if (data) renderProducts(data.items || []); })
+        .catch(function () { renderLogin("Bağlantı hatası."); });
+    } else if (view === "gallery") {
+      api("/api/admin/gallery").then(function (r) {
+        if (r.status === 401) { renderLogin(""); return null; }
+        return r.json();
+      }).then(function (data) { if (data) renderGallery(data.items || []); })
         .catch(function () { renderLogin("Bağlantı hatası."); });
     } else {
       api("/api/admin/leads").then(function (r) {

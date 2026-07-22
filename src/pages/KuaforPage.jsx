@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import useReveal from '../hooks/useReveal.js'
 import useDocumentMeta from '../hooks/useDocumentMeta.js'
@@ -31,6 +31,18 @@ export default function KuaforPage() {
   )
 
   const [status, setStatus] = useState('idle')
+  const [photos, setPhotos] = useState([])
+
+  useEffect(() => {
+    let alive = true
+    fetch('/api/gallery')
+      .then((r) => r.json())
+      .then((data) => alive && setPhotos(Array.isArray(data.items) ? data.items : []))
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -162,12 +174,21 @@ export default function KuaforPage() {
           <div className="k-head reveal">
             <span className="k-eyebrow">Galeri</span>
             <h2 className="k-h2">Atölyemizden</h2>
-            <p className="k-muted">Gerçek çalışma fotoğraflarımız çok yakında burada.</p>
+            {photos.length === 0 && (
+              <p className="k-muted">Gerçek çalışma fotoğraflarımız çok yakında burada.</p>
+            )}
           </div>
           <div className="k-gallery__grid">
-            {[0, 1, 2, 3, 4, 5].map((n) => (
-              <div className={`k-tile reveal k-tile--${n % 3}`} key={n}><span>DS</span></div>
-            ))}
+            {photos.length > 0
+              ? photos.map((g) => (
+                  <figure className="k-tile k-tile--photo" key={g.id}>
+                    <img src={`/api/gallery/${g.id}/image`} alt={g.caption || 'DS Önce Sen'} loading="lazy" />
+                    {g.caption && <figcaption>{g.caption}</figcaption>}
+                  </figure>
+                ))
+              : [0, 1, 2, 3, 4, 5].map((n) => (
+                  <div className={`k-tile k-tile--${n % 3}`} key={n}><span>DS</span></div>
+                ))}
           </div>
         </div>
       </section>
