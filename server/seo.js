@@ -12,6 +12,8 @@ const ORG_JSONLD = {
   description:
     "Ankara'da söz, nişan, doğum günü, baby shower, balon konsepti ve özel etkinlik organizasyonu.",
   url: `${SITE}/organizasyon`,
+  "@id": `${SITE}/organizasyon`,
+  image: `${SITE}/images/hero.webp`,
   telephone: "+90 551 862 56 60",
   areaServed: "Ankara",
   address: {
@@ -29,8 +31,15 @@ const KUAFOR_JSONLD = {
   description:
     "Balgat, Ankara'da saç, makyaj, gelin saçı & makyajı, cilt ve kişisel bakım hizmetleri sunan güzellik merkezi.",
   url: `${SITE}/kuafor`,
+  "@id": `${SITE}/kuafor`,
+  image: `${SITE}/images/hero.webp`,
   telephone: "+90 552 391 56 60",
   priceRange: "₺₺",
+  areaServed: "Balgat, Çankaya, Ankara",
+  sameAs: ["https://www.instagram.com/gold_cloverr"],
+  // Yerel SEO/Haritalar için GERÇEK değerleri gir, sonra yorumu kaldır:
+  // geo: { "@type": "GeoCoordinates", latitude: 39.9xxx, longitude: 32.8xxx },
+  // hasMap: "https://maps.google.com/?cid=<gerçek_google_business_cid>",
   address: {
     "@type": "PostalAddress",
     addressLocality: "Balgat, Çankaya",
@@ -61,6 +70,7 @@ const PORTAL_JSONLD = {
   name: "Gold Clover",
   url: SITE,
   inLanguage: "tr-TR",
+  sameAs: ["https://www.instagram.com/gold_cloverr"],
 };
 
 const ROUTES = {
@@ -113,10 +123,14 @@ function metaBlock(route) {
     `<meta name="robots" content="index, follow" />`,
     `<meta property="og:type" content="website" />`,
     `<meta property="og:site_name" content="Gold Clover" />`,
+    `<meta property="og:locale" content="tr_TR" />`,
     `<meta property="og:title" content="${title}" />`,
     `<meta property="og:description" content="${d}" />`,
     `<meta property="og:url" content="${url}" />`,
     `<meta property="og:image" content="${img}" />`,
+    `<meta property="og:image:width" content="2000" />`,
+    `<meta property="og:image:height" content="1125" />`,
+    `<meta property="og:image:alt" content="${title}" />`,
     `<meta name="twitter:card" content="summary_large_image" />`,
     `<meta name="twitter:title" content="${title}" />`,
     `<meta name="twitter:description" content="${d}" />`,
