@@ -108,6 +108,54 @@ const ROUTES = {
   },
 };
 
+// Route bazlı statik içerik bloğu. #root içine basılır; React mount olunca
+// createRoot() container'ı temizleyip üzerine yazar → kullanıcı görmez, ama
+// arama motorları & AI crawler'lar ilk HTML yanıtında metni görür.
+const SSR_CONTENT = {
+  "/": `
+    <h1>Gold Clover</h1>
+    <p>Ankara merkezli iki markanın ortak dijital kapısı: Gold Clover Organizasyon ve DS Önce Sen — Dilek Kuaför Balgat.</p>
+    <h2>Gold Clover Organizasyon</h2>
+    <p>Ankara'da söz, nişan, doğum günü, baby shower, balon konsepti ve özel etkinlik organizasyonu. <a href="/organizasyon">Organizasyonu keşfet</a></p>
+    <h2>DS Önce Sen — Dilek Kuaför Balgat</h2>
+    <p>Balgat, Çankaya'da saç, makyaj, gelin saçı & makyajı, cilt ve kişisel bakım. <a href="/kuafor">Kuaförü keşfet</a></p>`,
+  "/organizasyon": `
+    <h1>Gold Clover Organizasyon — Ankara</h1>
+    <p>Ankara'da hayalinizdeki etkinliği kusursuz kurguluyoruz. Söz, nişan, doğum günü, baby shower, balon konsepti ve özel kutlamalar.</p>
+    <h2>Hizmetler</h2>
+    <ul>
+      <li>Söz & nişan organizasyonu</li>
+      <li>Doğum günü & baby shower</li>
+      <li>Balon konsepti tasarımı</li>
+      <li>Butik çiçek aranjmanları & hediyelik</li>
+    </ul>
+    <p><a href="/urunler">Ürün ve konseptleri gör</a></p>`,
+  "/urunler": `
+    <h1>Ürünler — Gold Clover Organizasyon</h1>
+    <p>Balon konseptleri, butik çiçek aranjmanları ve özel hediyelikler. Ankara'da organizasyonunuzu tamamlayın.</p>
+    <h2>Kategoriler</h2>
+    <ul>
+      <li>Balon konseptleri</li>
+      <li>Çiçek aranjmanları</li>
+      <li>Özel hediyelikler</li>
+    </ul>`,
+  "/kuafor": `
+    <h1>DS Önce Sen — Dilek Kuaför Balgat</h1>
+    <p>Balgat, Çankaya (Ankara)'da güzelliğin adresi. Saç, makyaj, gelin saçı & makyajı, cilt ve kişisel bakım hizmetleri.</p>
+    <h2>Hizmetler</h2>
+    <ul>
+      <li>Saç kesim, bakım & şekillendirme</li>
+      <li>Makyaj & gelin makyajı</li>
+      <li>Gelin saçı</li>
+      <li>Cilt & kişisel bakım</li>
+    </ul>
+    <p>Çalışma saatleri: Her gün 09:00–18:00. Randevu: 0552 391 56 60.</p>`,
+};
+
+function ssrBlock(key) {
+  return SSR_CONTENT[key] || SSR_CONTENT["/"];
+}
+
 function escapeAttr(s) {
   return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
 }
@@ -145,7 +193,11 @@ export function injectMeta(html, pathname) {
   const route = ROUTES[key] || ROUTES["/"];
   return html
     .replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapeAttr(route.title)}</title>`)
-    .replace("<!--SEO-->", metaBlock(route));
+    .replace("<!--SEO-->", metaBlock(route))
+    .replace(
+      '<div id="root"></div>',
+      `<div id="root">${ssrBlock(key)}</div>`,
+    );
 }
 
 export { SITE, ROUTES };
