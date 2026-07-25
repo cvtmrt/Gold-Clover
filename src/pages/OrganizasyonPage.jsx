@@ -15,7 +15,7 @@ export default function OrganizasyonPage() {
   useReveal(true)
   useDocumentMeta(
     'Gold Clover Organizasyon — Ankara Etkinlik & Organizasyon',
-    "Söz, nişan, doğum günü, baby shower, balon konsepti ve özel kutlamalar. Ankara'da hayalinizdeki etkinliği kusursuz kurguluyoruz."
+    "Söz, nişan, doğum günü, baby shower, balon konsepti ve özel kutlamalar. Ankara'da hayalinizdeki etkinliği kusursuz kurguluyoruz. Butik çiçek & hediyelik."
   )
 
   return (

@@ -24,7 +24,8 @@ export default function Products() {
       <div className="container">
         <div className="section-head">
           <span className="eyebrow reveal">Ürünler</span>
-          <h2 className="reveal">Konsept &amp; <span className="text-gold">Hediyelik</span></h2>
+          {/* Kendi sayfasının (/urunler) ana başlığı → h1. Stil .section-head h1 ile aynı. */}
+          <h1 className="reveal">Konsept &amp; <span className="text-gold">Hediyelik</span></h1>
           <span className="divider reveal" />
           <p className="reveal">
             Balon konseptleri, butik çiçek aranjmanları ve özel hediyelikler — her detay

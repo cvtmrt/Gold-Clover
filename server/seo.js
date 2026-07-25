@@ -16,9 +16,11 @@ const ORG_JSONLD = {
   image: `${SITE}/images/hero.webp`,
   telephone: "+90 551 862 56 60",
   areaServed: "Ankara",
+  // Organizasyon ve kuaför AYNI adreste faaliyet gösteriyor (Balgat, Çankaya).
   address: {
     "@type": "PostalAddress",
-    addressLocality: "Ankara",
+    addressLocality: "Balgat, Çankaya",
+    addressRegion: "Ankara",
     addressCountry: "TR",
   },
   sameAs: ["https://www.instagram.com/gold_cloverr"],
@@ -37,7 +39,9 @@ const KUAFOR_JSONLD = {
   priceRange: "₺₺",
   areaServed: "Balgat, Çankaya, Ankara",
   sameAs: ["https://www.instagram.com/gold_cloverr"],
-  // Yerel SEO/Haritalar için GERÇEK değerleri gir, sonra yorumu kaldır:
+  // BEKLEMEDE: işletme adı değişikliği için Google'a başvuru yapıldı. Başvuru
+  // sonuçlanınca aşağıdaki GERÇEK değerleri gir ve yorumu kaldır — yerel arama
+  // ve Haritalar görünürlüğü için en değerli sinyal bunlar:
   // geo: { "@type": "GeoCoordinates", latitude: 39.9xxx, longitude: 32.8xxx },
   // hasMap: "https://maps.google.com/?cid=<gerçek_google_business_cid>",
   address: {
@@ -77,7 +81,7 @@ const ROUTES = {
   "/": {
     title: "Gold Clover — Organizasyon & DS Önce Sen Kuaför | Ankara",
     description:
-      "Gold Clover Organizasyon ve DS Önce Sen (Dilek Kuaför Balgat). Ankara'da etkinlik organizasyonu ve güzellik & kişisel bakım. Hangisini keşfetmek istersiniz?",
+      "Gold Clover Organizasyon ve DS Önce Sen (Dilek Kuaför Balgat). Ankara'da etkinlik organizasyonu ve güzellik & kişisel bakım.",
     canonical: `${SITE}/`,
     ogImage: DEFAULT_OG,
     jsonLd: PORTAL_JSONLD,
@@ -85,13 +89,13 @@ const ROUTES = {
   "/organizasyon": {
     title: "Gold Clover Organizasyon — Ankara Etkinlik & Organizasyon",
     description:
-      "Söz, nişan, doğum günü, baby shower, balon konsepti ve özel kutlamalar. Ankara'da hayalinizdeki etkinliği kusursuz kurguluyoruz. Butik çiçek & hediyelik ürünler.",
+      "Söz, nişan, doğum günü, baby shower, balon konsepti ve özel kutlamalar. Ankara'da hayalinizdeki etkinliği kusursuz kurguluyoruz. Butik çiçek & hediyelik.",
     canonical: `${SITE}/organizasyon`,
     ogImage: DEFAULT_OG,
     jsonLd: ORG_JSONLD,
   },
   "/urunler": {
-    title: "Ürünler — Gold Clover Organizasyon | Balon Konsepti, Çiçek, Hediyelik",
+    title: "Ürünler — Balon Konsepti, Çiçek & Hediyelik | Gold Clover",
     description:
       "Gold Clover ürünleri: balon konseptleri, butik çiçek aranjmanları ve özel hediyelikler. Ankara'da organizasyonunuzu tamamlayın.",
     canonical: `${SITE}/urunler`,
@@ -99,7 +103,7 @@ const ROUTES = {
     jsonLd: ORG_JSONLD,
   },
   "/kuafor": {
-    title: "DS Önce Sen — Dilek Kuaför Balgat | Ankara Güzellik & Kişisel Bakım",
+    title: "DS Önce Sen — Dilek Kuaför Balgat | Ankara Güzellik & Bakım",
     description:
       "Balgat, Ankara'da saç, makyaj, gelin saçı & makyajı, cilt ve kişisel bakım. DS Önce Sen — Dilek Kuaför. Her gün 09:00–18:00. Randevu: 0552 391 56 60.",
     canonical: `${SITE}/kuafor`,
@@ -173,7 +177,7 @@ function escapeAttr(s) {
   return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
 }
 
-function metaBlock(route) {
+function metaBlock(route, known) {
   const d = escapeAttr(route.description);
   const url = escapeAttr(route.canonical);
   const img = escapeAttr(route.ogImage);
@@ -181,7 +185,8 @@ function metaBlock(route) {
   return [
     `<meta name="description" content="${d}" />`,
     `<link rel="canonical" href="${url}" />`,
-    `<meta name="robots" content="index, follow" />`,
+    // Bilinmeyen yollar 404 döndüğü için indekslenmemeli; linkler yine izlensin.
+    `<meta name="robots" content="${known ? "index, follow" : "noindex, follow"}" />`,
     `<meta property="og:type" content="website" />`,
     `<meta property="og:site_name" content="Gold Clover" />`,
     `<meta property="og:locale" content="tr_TR" />`,
@@ -200,13 +205,23 @@ function metaBlock(route) {
   ].join("\n    ");
 }
 
+function routeKey(pathname) {
+  return (pathname || "/").replace(/\/+$/, "") || "/";
+}
+
+// Sunucunun 200 mü 404 mü döneceğine karar vermesi için: tanımlı rota mı?
+export function isKnownRoute(pathname) {
+  return Object.prototype.hasOwnProperty.call(ROUTES, routeKey(pathname));
+}
+
 // index.html'i alır, path'e göre <title> ve <!--SEO--> işaretçisini doldurur.
 export function injectMeta(html, pathname) {
-  const key = (pathname || "/").replace(/\/+$/, "") || "/";
+  const key = routeKey(pathname);
+  const known = isKnownRoute(key);
   const route = ROUTES[key] || ROUTES["/"];
   return html
     .replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapeAttr(route.title)}</title>`)
-    .replace("<!--SEO-->", metaBlock(route))
+    .replace("<!--SEO-->", metaBlock(route, known))
     .replace(
       '<div id="root"></div>',
       `<div id="root">${ssrBlock(key)}</div>`,

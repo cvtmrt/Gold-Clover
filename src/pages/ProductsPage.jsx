@@ -8,8 +8,8 @@ import '../styles/app.css'
 export default function ProductsPage() {
   useReveal(true)
   useDocumentMeta(
-    'Ürünler — Gold Clover Organizasyon | Balon Konsepti, Çiçek, Hediyelik',
-    'Gold Clover ürünleri: balon konseptleri, butik çiçek aranjmanları ve özel hediyelikler. Organizasyonunuzu tamamlayın.'
+    'Ürünler — Balon Konsepti, Çiçek & Hediyelik | Gold Clover',
+    "Gold Clover ürünleri: balon konseptleri, butik çiçek aranjmanları ve özel hediyelikler. Ankara'da organizasyonunuzu tamamlayın."
   )
 
   return (

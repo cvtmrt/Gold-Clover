@@ -26,7 +26,7 @@ const DAYS = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartes
 export default function KuaforPage() {
   useReveal(true)
   useDocumentMeta(
-    'DS Önce Sen — Dilek Kuaför Balgat | Ankara Güzellik & Kişisel Bakım',
+    'DS Önce Sen — Dilek Kuaför Balgat | Ankara Güzellik & Bakım',
     'Balgat, Ankara’da saç, makyaj, gelin saçı & makyajı, cilt ve kişisel bakım. Her gün 09:00–18:00. Randevu: 0552 391 56 60.'
   )
 

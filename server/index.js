@@ -7,7 +7,7 @@ import compression from "compression";
 import fs from "fs";
 import path from "path";
 import { mountApi } from "./api.js";
-import { injectMeta } from "./seo.js";
+import { injectMeta, isKnownRoute } from "./seo.js";
 import { hasDb } from "../db/index.js";
 import { ensureSchema } from "../db/ensure-schema.js";
 import "dotenv/config";
@@ -44,8 +44,11 @@ async function startServer() {
     app.use(sirv(dist, { extensions: [] }));
     const indexHtml = fs.readFileSync(path.join(dist, "index.html"), "utf-8");
     // SPA fallback: statik dosya bulunamayan tüm yollar rota-SEO ile index.html döner.
+    // Tanımsız yollarda 404 döneriz (aksi halde Google "soft 404" olarak işaretler);
+    // gövde yine SPA olduğu için kullanıcı portalı görür, arama motoru noindex alır.
     app.get(/.*/, (req, res) => {
-      res.status(200).type("html").send(injectMeta(indexHtml, req.path));
+      const status = isKnownRoute(req.path) ? 200 : 404;
+      res.status(status).type("html").send(injectMeta(indexHtml, req.path));
     });
   } else {
     const vite = await import("vite");
@@ -62,7 +65,8 @@ async function startServer() {
           req.originalUrl,
           fs.readFileSync(path.join(root, "index.html"), "utf-8")
         );
-        res.status(200).type("html").end(injectMeta(template, req.path));
+        const status = isKnownRoute(req.path) ? 200 : 404;
+        res.status(status).type("html").end(injectMeta(template, req.path));
       } catch (err) {
         viteServer.ssrFixStacktrace(err);
         next(err);
