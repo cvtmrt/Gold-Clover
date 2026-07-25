@@ -111,6 +111,11 @@ const ROUTES = {
 // Route bazlı statik içerik bloğu. #root içine basılır; React mount olunca
 // createRoot() container'ı temizleyip üzerine yazar → kullanıcı görmez, ama
 // arama motorları & AI crawler'lar ilk HTML yanıtında metni görür.
+//
+// GÖRSEL OLARAK GİZLİ: blok, React yüklenene kadar ekranda kalıyordu ve stilsiz
+// (çıplak h1/p/ul) göründüğü için sayfa bir an "bozuk açılıp düzeliyor" gibi
+// algılanıyordu. Standart sr-only tekniğiyle gizlendi — DOM'da ve HTML kaynağında
+// duruyor (crawler + ekran okuyucu görür), gözle görünmez.
 const SSR_CONTENT = {
   "/": `
     <h1>Gold Clover</h1>
@@ -152,8 +157,16 @@ const SSR_CONTENT = {
     <p>Çalışma saatleri: Her gün 09:00–18:00. Randevu: 0552 391 56 60.</p>`,
 };
 
+// Ekrandan gizleyen ama içeriği DOM'da bırakan sarmalayıcı (sr-only).
+// display:none KULLANMA — gizlenen içeriği crawler'lar yok sayabilir.
+const SSR_HIDDEN_STYLE =
+  "position:absolute;width:1px;height:1px;margin:-1px;padding:0;" +
+  "overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);" +
+  "white-space:nowrap;border:0";
+
 function ssrBlock(key) {
-  return SSR_CONTENT[key] || SSR_CONTENT["/"];
+  const content = SSR_CONTENT[key] || SSR_CONTENT["/"];
+  return `<div data-seo-ssr style="${SSR_HIDDEN_STYLE}">${content}</div>`;
 }
 
 function escapeAttr(s) {
