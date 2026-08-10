@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import useReveal from '../hooks/useReveal.js'
 import useDocumentMeta from '../hooks/useDocumentMeta.js'
+import BeforeAfter from '../components/BeforeAfter.jsx'
 import '../styles/kuafor.css'
 
 const PHONE_DISPLAY = '0552 391 56 60'
@@ -23,15 +24,30 @@ const SERVICES = [
 
 const DAYS = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar']
 
+// Galeri kategorileri — yalnızca her iki türden de fotoğraf varsa gösterilir.
+const FILTERS = [
+  ['all', 'Tümü'],
+  ['foto', 'Çalışmalarımız'],
+  ['donusum', 'Öncesi & Sonrası'],
+]
+
 export default function KuaforPage() {
   useReveal(true)
   useDocumentMeta(
-    'DS Önce Sen — Dilek Kuaför Balgat | Ankara Güzellik & Bakım',
-    'Balgat, Ankara’da saç, makyaj, gelin saçı & makyajı, cilt ve kişisel bakım. Her gün 09:00–19:00. Randevu: 0552 391 56 60.'
+    'Dilek Sanık Hair & Beauty Center | Balgat Ankara Kuaför',
+    "Balgat, Ankara'da saç, makyaj, gelin saçı & makyajı, cilt ve kişisel bakım. Dilek Sanık Hair & Beauty Center. Her gün 09:00–19:00. Randevu: 0552 391 56 60."
   )
 
   const [status, setStatus] = useState('idle')
   const [photos, setPhotos] = useState([])
+  const [filter, setFilter] = useState('all')
+
+  // Öncesi/sonrası kayıtları ikinci fotoğrafı olmadan gösterilmez.
+  const transformations = photos.filter((g) => g.kind === 'donusum' && g.hasAfter)
+  const works = photos.filter((g) => g.kind !== 'donusum')
+  const hasBothKinds = transformations.length > 0 && works.length > 0
+  const shownPhotos =
+    !hasBothKinds || filter === 'all' ? photos : filter === 'donusum' ? transformations : works
 
   useEffect(() => {
     let alive = true
@@ -76,8 +92,8 @@ export default function KuaforPage() {
       <header className="k-nav">
         <div className="k-nav__inner">
           <a href="#k-top" className="k-nav__brand">
-            <span className="k-nav__ds">DS</span>
-            <span className="k-nav__name">Önce Sen</span>
+            <img className="k-nav__mark" src="/ds-mark-light.png" alt="" aria-hidden="true" />
+            <span className="k-nav__name">Dilek Sanık</span>
           </a>
           <nav className="k-nav__links">
             <a href="#k-hizmetler">Hizmetler</a>
@@ -93,9 +109,18 @@ export default function KuaforPage() {
       <section className="k-hero" id="k-top">
         <div className="k-hero__glow" />
         <div className="k-hero__inner reveal">
-          <span className="k-hero__ds">DS</span>
-          <span className="k-hero__eyebrow">Dilek Kuaför · Balgat, Ankara</span>
-          <h1 className="k-hero__title">Önce <span className="k-script">Sen</span></h1>
+          {/* Monogram; tam kilit (isim + alt satır) hemen altındaki başlıkta tekrarlanıyor. */}
+          <img
+            className="k-hero__logo"
+            src="/ds-mark-light.png"
+            alt=""
+            aria-hidden="true"
+            width="300"
+            height="423"
+          />
+          <span className="k-hero__eyebrow">Balgat, Çankaya · Ankara</span>
+          <h1 className="k-hero__title">Dilek <span className="k-script">Sanık</span></h1>
+          <span className="k-hero__tagline">Hair &amp; Beauty Center</span>
           <p className="k-hero__sub">
             Güzellik, kozmetik ve kişisel bakımda ayrıcalıklı bir deneyim. Saçınızdan
             cildinize, en özel gününüzden günlük bakımınıza kadar yanınızdayız.
@@ -114,9 +139,9 @@ export default function KuaforPage() {
             <span className="k-eyebrow">Hakkımızda</span>
             <h2 className="k-h2">Balgat’ta güzelliğin <span className="k-gold">adresi</span></h2>
             <p>
-              DS “Önce Sen”, Ankara Balgat’ta güzellik, kozmetik ve kişisel bakım hizmetleri sunan
-              butik bir kuaför & güzellik merkezidir. Deneyimli ekibimizle her misafirimize özel,
-              rahat ve zarif bir deneyim sunuyoruz.
+              Dilek Sanık Hair &amp; Beauty Center, Ankara Balgat’ta güzellik, kozmetik ve kişisel
+              bakım hizmetleri sunan butik bir kuaför &amp; güzellik merkezidir. Deneyimli ekibimizle
+              her misafirimize özel, rahat ve zarif bir deneyim sunuyoruz.
             </p>
             <p>
               İster özel gününüz için hazırlanın, ister kendinize vakit ayırın — burada önce siz
@@ -177,15 +202,43 @@ export default function KuaforPage() {
             {photos.length === 0 && (
               <p className="k-muted">Gerçek çalışma fotoğraflarımız çok yakında burada.</p>
             )}
+            {hasBothKinds && (
+              <div className="k-filters" role="tablist" aria-label="Galeri kategorileri">
+                {FILTERS.map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    role="tab"
+                    aria-selected={filter === key}
+                    className={`k-chip${filter === key ? ' k-chip--on' : ''}`}
+                    onClick={() => setFilter(key)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+            {filter === 'donusum' && shownPhotos.length > 0 && (
+              <p className="k-muted k-gallery__hint">Ayracı sürükleyerek öncesi/sonrasını karşılaştırın.</p>
+            )}
           </div>
           <div className="k-gallery__grid">
             {photos.length > 0
-              ? photos.map((g) => (
-                  <figure className="k-tile k-tile--photo" key={g.id}>
-                    <img src={`/api/gallery/${g.id}/image`} alt={g.caption || 'DS Önce Sen'} loading="lazy" />
-                    {g.caption && <figcaption>{g.caption}</figcaption>}
-                  </figure>
-                ))
+              ? shownPhotos.map((g) =>
+                  g.kind === 'donusum' && g.hasAfter ? (
+                    <BeforeAfter
+                      key={g.id}
+                      beforeSrc={`/api/gallery/${g.id}/image`}
+                      afterSrc={`/api/gallery/${g.id}/image-after`}
+                      caption={g.caption}
+                    />
+                  ) : (
+                    <figure className="k-tile k-tile--photo" key={g.id}>
+                      <img src={`/api/gallery/${g.id}/image`} alt={g.caption || 'Dilek Sanık'} loading="lazy" />
+                      {g.caption && <figcaption>{g.caption}</figcaption>}
+                    </figure>
+                  )
+                )
               : [0, 1, 2, 3, 4, 5].map((n) => (
                   <div className={`k-tile k-tile--${n % 3}`} key={n}><span>DS</span></div>
                 ))}
@@ -209,7 +262,7 @@ export default function KuaforPage() {
 
             <div className="k-map">
               <iframe
-                title="DS Önce Sen — Konum"
+                title="Dilek Sanık Hair &amp; Beauty Center — Konum"
                 src={MAP_SRC}
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
@@ -266,12 +319,12 @@ export default function KuaforPage() {
       <footer className="k-footer">
         <div className="k-wrap k-footer__inner">
           <div className="k-footer__brand">
-            <span className="k-nav__ds">DS</span>
-            <span>Önce Sen — Dilek Kuaför</span>
+            <img className="k-nav__mark" src="/ds-mark-light.png" alt="" aria-hidden="true" />
+            <span>Dilek Sanık — Hair &amp; Beauty Center</span>
           </div>
           <div className="k-footer__meta">
             <span>Balgat, Çankaya / Ankara · Her gün 09:00–19:00</span>
-            <span>© {new Date().getFullYear()} DS Önce Sen · <Link to="/">Gold Clover</Link></span>
+            <span>© {new Date().getFullYear()} Dilek Sanık · <Link to="/">Gold Clover</Link></span>
           </div>
         </div>
       </footer>

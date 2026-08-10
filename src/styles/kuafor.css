@@ -39,7 +39,8 @@
 /* NAV */
 .k-nav { position: sticky; top: 0; z-index: 50; background: rgba(23,17,13,0.72); backdrop-filter: blur(14px); border-bottom: 1px solid var(--kline); }
 .k-nav__inner { width: min(92%, 1180px); margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 68px; }
-.k-nav__brand { display: flex; align-items: baseline; gap: 0.55rem; }
+.k-nav__brand { display: flex; align-items: center; gap: 0.6rem; }
+.k-nav__mark { height: 38px; width: auto; display: block; }
 .k-nav__ds { font-family: var(--kfont-d); font-weight: 600; font-size: 1.5rem; color: var(--kgold-2); letter-spacing: 1px; }
 .k-nav__name { font-family: var(--kfont-s); font-size: 1.5rem; color: var(--kgold); }
 .k-nav__links { display: flex; align-items: center; gap: 1.8rem; }
@@ -54,6 +55,8 @@
 .k-hero__glow { position: absolute; inset: 0; background: radial-gradient(40% 40% at 50% 35%, rgba(240,217,166,0.14), transparent 70%); pointer-events: none; }
 .k-hero__inner { position: relative; z-index: 2; padding: 5rem 1.5rem; max-width: 760px; }
 .k-hero__ds { font-family: var(--kfont-d); font-weight: 600; font-size: clamp(3rem, 8vw, 5rem); color: var(--kgold-2); letter-spacing: 3px; display: block; text-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+.k-hero__logo { display: block; width: clamp(96px, 16vw, 140px); height: auto; margin: 0 auto; filter: drop-shadow(0 18px 45px rgba(0,0,0,0.55)); }
+.k-hero__tagline { display: block; margin: -0.4rem 0 0.4rem; font-size: 0.78rem; letter-spacing: 0.42em; text-transform: uppercase; color: var(--kgold); }
 .k-hero__eyebrow { display: block; margin: 0.8rem 0 0.4rem; font-size: 0.74rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--krose); }
 .k-hero__title { font-family: var(--kfont-d); font-weight: 500; font-size: clamp(2.8rem, 7vw, 5rem); line-height: 1.05; margin: 0.3rem 0 1.2rem; }
 .k-hero__title .k-script { font-size: 1.2em; }
@@ -100,6 +103,25 @@
 .k-tile--photo img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.7s var(--kease); }
 .k-tile--photo:hover img { transform: scale(1.06); }
 .k-tile--photo figcaption { position: absolute; left: 0; right: 0; bottom: 0; padding: 0.7rem 0.9rem; font-size: 0.82rem; color: #fff; background: linear-gradient(to top, rgba(16,11,6,0.85), transparent); }
+/* Galeri kategori çipleri */
+.k-filters { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; margin-top: 1.8rem; }
+.k-chip { padding: 0.55rem 1.25rem; border-radius: 100px; border: 1px solid var(--kline); background: transparent; color: rgba(243,235,224,0.8); font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease; }
+.k-chip:hover { border-color: rgba(240,217,166,0.5); color: var(--kgold-2); }
+.k-chip--on { background: var(--kgrad); border-color: transparent; color: #3a2a12; }
+.k-gallery__hint { margin-top: 1rem; font-size: 0.88rem; }
+
+/* Öncesi / sonrası karşılaştırma karosu */
+.k-ba { position: relative; margin: 0; aspect-ratio: 4/5; border-radius: 12px; overflow: hidden; border: 1px solid var(--kline); background: #17110d; touch-action: pan-y; cursor: ew-resize; user-select: none; }
+.k-ba__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; -webkit-user-drag: none; }
+.k-ba__clip { position: absolute; inset: 0; }
+.k-ba__tag { position: absolute; top: 0.7rem; font-size: 0.64rem; letter-spacing: 0.16em; text-transform: uppercase; padding: 0.3rem 0.6rem; border-radius: 100px; background: rgba(16,11,6,0.72); border: 1px solid var(--kline); color: var(--kgold-2); backdrop-filter: blur(6px); pointer-events: none; }
+.k-ba__tag--before { left: 0.7rem; }
+.k-ba__tag--after { right: 0.7rem; }
+.k-ba__handle { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(240,217,166,0.85); transform: translateX(-1px); box-shadow: 0 0 18px rgba(240,217,166,0.5); }
+.k-ba__handle:focus-visible { outline: none; background: var(--kgold-2); box-shadow: 0 0 0 2px rgba(240,217,166,0.6); }
+.k-ba__grip { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: var(--kgrad); color: #3a2a12; box-shadow: 0 8px 24px rgba(0,0,0,0.45); }
+.k-ba__caption { position: absolute; left: 0; right: 0; bottom: 0; padding: 0.7rem 0.9rem; font-size: 0.82rem; color: #fff; background: linear-gradient(to top, rgba(16,11,6,0.88), transparent); pointer-events: none; }
+
 .k-tile--0 { background: linear-gradient(150deg, #2c2016, #1a130d); }
 .k-tile--1 { background: linear-gradient(150deg, #3a291d, #211812); }
 .k-tile--2 { background: linear-gradient(150deg, #2a1f18, #17110c); }

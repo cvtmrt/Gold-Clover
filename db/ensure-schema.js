@@ -52,6 +52,11 @@ export async function ensureSchema() {
     )
   `;
   await sql`CREATE INDEX IF NOT EXISTS gallery_sort_idx ON gallery (active, sort_order, id)`;
+  // Sonradan eklenen: "öncesi/sonrası" kayıtları. kind='foto' tek görsel (model
+  // çalışması), kind='donusum' ise image_data = öncesi, image_data_after = sonrası.
+  await sql`ALTER TABLE gallery ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'foto'`;
+  await sql`ALTER TABLE gallery ADD COLUMN IF NOT EXISTS image_type_after text`;
+  await sql`ALTER TABLE gallery ADD COLUMN IF NOT EXISTS image_data_after bytea`;
 
   return true;
 }

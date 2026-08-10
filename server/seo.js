@@ -29,7 +29,8 @@ const ORG_JSONLD = {
 const KUAFOR_JSONLD = {
   "@context": "https://schema.org",
   "@type": "HairSalon",
-  name: "Dilek Kuaför Balgat — DS Önce Sen",
+  name: "Dilek Sanık — Hair & Beauty Center",
+  alternateName: "Dilek Sanık Kuaför Balgat",
   description:
     "Balgat, Ankara'da saç, makyaj, gelin saçı & makyajı, cilt ve kişisel bakım hizmetleri sunan güzellik merkezi.",
   url: `${SITE}/kuafor`,
@@ -79,9 +80,9 @@ const PORTAL_JSONLD = {
 
 const ROUTES = {
   "/": {
-    title: "Gold Clover — Organizasyon & DS Önce Sen Kuaför | Ankara",
+    title: "Gold Clover Organizasyon & Dilek Sanık Kuaför | Ankara",
     description:
-      "Gold Clover Organizasyon ve DS Önce Sen (Dilek Kuaför Balgat). Ankara'da etkinlik organizasyonu ve güzellik & kişisel bakım.",
+      "Gold Clover Organizasyon ve Dilek Sanık Hair & Beauty Center (Balgat). Ankara'da etkinlik organizasyonu ve güzellik & kişisel bakım.",
     canonical: `${SITE}/`,
     ogImage: DEFAULT_OG,
     jsonLd: PORTAL_JSONLD,
@@ -103,9 +104,9 @@ const ROUTES = {
     jsonLd: ORG_JSONLD,
   },
   "/kuafor": {
-    title: "DS Önce Sen — Dilek Kuaför Balgat | Ankara Güzellik & Bakım",
+    title: "Dilek Sanık Hair & Beauty Center | Balgat Ankara Kuaför",
     description:
-      "Balgat, Ankara'da saç, makyaj, gelin saçı & makyajı, cilt ve kişisel bakım. DS Önce Sen — Dilek Kuaför. Her gün 09:00–19:00. Randevu: 0552 391 56 60.",
+      "Balgat, Ankara'da saç, makyaj, gelin saçı & makyajı, cilt ve kişisel bakım. Dilek Sanık Hair & Beauty Center. Her gün 09:00–19:00. Randevu: 0552 391 56 60.",
     canonical: `${SITE}/kuafor`,
     ogImage: DEFAULT_OG,
     jsonLd: KUAFOR_JSONLD,
@@ -123,10 +124,10 @@ const ROUTES = {
 const SSR_CONTENT = {
   "/": `
     <h1>Gold Clover</h1>
-    <p>Ankara merkezli iki markanın ortak dijital kapısı: Gold Clover Organizasyon ve DS Önce Sen — Dilek Kuaför Balgat.</p>
+    <p>Ankara merkezli iki markanın ortak dijital kapısı: Gold Clover Organizasyon ve Dilek Sanık — Hair &amp; Beauty Center (Balgat).</p>
     <h2>Gold Clover Organizasyon</h2>
     <p>Ankara'da söz, nişan, doğum günü, baby shower, balon konsepti ve özel etkinlik organizasyonu. <a href="/organizasyon">Organizasyonu keşfet</a></p>
-    <h2>DS Önce Sen — Dilek Kuaför Balgat</h2>
+    <h2>Dilek Sanık — Hair &amp; Beauty Center (Balgat)</h2>
     <p>Balgat, Çankaya'da saç, makyaj, gelin saçı & makyajı, cilt ve kişisel bakım. <a href="/kuafor">Kuaförü keşfet</a></p>`,
   "/organizasyon": `
     <h1>Gold Clover Organizasyon — Ankara</h1>
@@ -149,7 +150,7 @@ const SSR_CONTENT = {
       <li>Özel hediyelikler</li>
     </ul>`,
   "/kuafor": `
-    <h1>DS Önce Sen — Dilek Kuaför Balgat</h1>
+    <h1>Dilek Sanık — Hair &amp; Beauty Center, Balgat</h1>
     <p>Balgat, Çankaya (Ankara)'da güzelliğin adresi. Saç, makyaj, gelin saçı & makyajı, cilt ve kişisel bakım hizmetleri.</p>
     <h2>Hizmetler</h2>
     <ul>

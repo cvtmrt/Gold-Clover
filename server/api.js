@@ -18,6 +18,8 @@ let memoryGalleryId = 1;
 
 const VALID_STATUS = new Set(["new", "contacted", "done"]);
 const VALID_BRAND = new Set(["organizasyon", "kuafor"]);
+// Galeri kaydı türü: tek fotoğraf (model çalışması) ya da öncesi/sonrası ikilisi.
+const VALID_GALLERY_KIND = new Set(["foto", "donusum"]);
 
 // Görsel yükleme: bellekte tut, sharp ile WebP'ye sıkıştır, DB'de bytea sakla.
 const upload = multer({
@@ -440,7 +442,9 @@ export function mountApi(app) {
     try {
       if (hasDb) {
         const rows = await sql`
-          SELECT id, caption, sort_order AS "sortOrder", (image_data IS NOT NULL) AS "hasImage"
+          SELECT id, caption, kind, sort_order AS "sortOrder",
+                 (image_data IS NOT NULL) AS "hasImage",
+                 (image_data_after IS NOT NULL) AS "hasAfter"
           FROM gallery WHERE active = true ORDER BY sort_order ASC, id ASC
         `;
         res.json({ items: rows });
@@ -449,7 +453,11 @@ export function mountApi(app) {
       const items = memoryGallery
         .filter((g) => g.active)
         .sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id)
-        .map(({ imageBuffer, imageType, ...rest }) => ({ ...rest, hasImage: Boolean(imageBuffer) }));
+        .map(({ imageBuffer, imageType, imageBufferAfter, imageTypeAfter, ...rest }) => ({
+          ...rest,
+          hasImage: Boolean(imageBuffer),
+          hasAfter: Boolean(imageBufferAfter),
+        }));
       res.json({ items });
     } catch (err) {
       console.error("galeri listesi hatası:", err);
@@ -489,6 +497,39 @@ export function mountApi(app) {
     }
   });
 
+  // "Öncesi/sonrası" kayıtlarının ikinci görseli (sonrası).
+  app.get("/api/gallery/:id/image-after", async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) {
+      res.status(400).end();
+      return;
+    }
+    try {
+      if (hasDb) {
+        const [row] = await sql`SELECT image_type_after, image_data_after FROM gallery WHERE id = ${id}`;
+        if (!row || !row.image_data_after) {
+          res.status(404).end();
+          return;
+        }
+        res.setHeader("Content-Type", row.image_type_after || "image/webp");
+        res.setHeader("Cache-Control", "public, max-age=86400");
+        res.end(Buffer.from(row.image_data_after));
+        return;
+      }
+      const g = memoryGallery.find((x) => x.id === id);
+      if (!g || !g.imageBufferAfter) {
+        res.status(404).end();
+        return;
+      }
+      res.setHeader("Content-Type", g.imageTypeAfter || "image/webp");
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      res.end(g.imageBufferAfter);
+    } catch (err) {
+      console.error("galeri sonrası görseli hatası:", err);
+      res.status(500).end();
+    }
+  });
+
   // ============================================================
   // Admin: kuaför galeri yönetimi
   // ============================================================
@@ -496,8 +537,9 @@ export function mountApi(app) {
     try {
       if (hasDb) {
         const rows = await sql`
-          SELECT id, caption, active, sort_order AS "sortOrder",
-                 (image_data IS NOT NULL) AS "hasImage", created_at AS "createdAt"
+          SELECT id, caption, kind, active, sort_order AS "sortOrder",
+                 (image_data IS NOT NULL) AS "hasImage",
+                 (image_data_after IS NOT NULL) AS "hasAfter", created_at AS "createdAt"
           FROM gallery ORDER BY sort_order ASC, id ASC
         `;
         res.json({ items: rows });
@@ -506,7 +548,11 @@ export function mountApi(app) {
       const items = memoryGallery
         .slice()
         .sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id)
-        .map(({ imageBuffer, ...rest }) => ({ ...rest, hasImage: Boolean(imageBuffer) }));
+        .map(({ imageBuffer, imageBufferAfter, ...rest }) => ({
+          ...rest,
+          hasImage: Boolean(imageBuffer),
+          hasAfter: Boolean(imageBufferAfter),
+        }));
       res.json({ items });
     } catch (err) {
       console.error("galeri (admin) hatası:", err);
@@ -514,19 +560,33 @@ export function mountApi(app) {
     }
   });
 
-  app.post("/api/admin/gallery", requireAdmin, upload.single("image"), async (req, res) => {
-    if (!req.file?.buffer) {
+  const galleryUpload = upload.fields([
+    { name: "image", maxCount: 1 },
+    { name: "imageAfter", maxCount: 1 },
+  ]);
+
+  app.post("/api/admin/gallery", requireAdmin, galleryUpload, async (req, res) => {
+    const before = req.files?.image?.[0];
+    const after = req.files?.imageAfter?.[0];
+    if (!before?.buffer) {
       res.status(400).json({ ok: false, error: "Görsel gerekli." });
+      return;
+    }
+    const kind = VALID_GALLERY_KIND.has(clean(req.body?.kind, 20)) ? clean(req.body.kind, 20) : "foto";
+    if (kind === "donusum" && !after?.buffer) {
+      res.status(400).json({ ok: false, error: "Öncesi/sonrası için iki fotoğraf da gerekli." });
       return;
     }
     const caption = clean(req.body?.caption, 200) || null;
     const sortOrder = toInt(req.body?.sortOrder, 0);
     try {
-      const imageBuffer = await toWebp(req.file.buffer);
+      const imageBuffer = await toWebp(before.buffer);
+      const imageBufferAfter = kind === "donusum" ? await toWebp(after.buffer) : null;
       if (hasDb) {
         const [row] = await sql`
-          INSERT INTO gallery (caption, image_type, image_data, active, sort_order)
-          VALUES (${caption}, 'image/webp', ${imageBuffer}, true, ${sortOrder})
+          INSERT INTO gallery (caption, kind, image_type, image_data, image_type_after, image_data_after, active, sort_order)
+          VALUES (${caption}, ${kind}, 'image/webp', ${imageBuffer},
+                  ${imageBufferAfter ? "image/webp" : null}, ${imageBufferAfter}, true, ${sortOrder})
           RETURNING id
         `;
         res.json({ ok: true, id: row.id });
@@ -534,8 +594,11 @@ export function mountApi(app) {
         const g = {
           id: memoryGalleryId++,
           caption,
+          kind,
           imageType: "image/webp",
           imageBuffer,
+          imageTypeAfter: imageBufferAfter ? "image/webp" : null,
+          imageBufferAfter,
           active: true,
           sortOrder,
           createdAt: new Date().toISOString(),
@@ -630,6 +693,10 @@ const PANEL_HTML = `<!doctype html>
   .gcard { position:relative; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--card); }
   .gthumb { width:100%; aspect-ratio:4/5; object-fit:cover; display:block; background:#100f0c; }
   .gcap { padding:8px 10px; font-size:12px; color:var(--muted); }
+  .gpair { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line); }
+  .gpair .gside { position:relative; background:#100f0c; }
+  .gpair .gside img { width:100%; aspect-ratio:4/5; object-fit:cover; display:block; }
+  .gpair .gside span { position:absolute; left:6px; bottom:6px; font-size:10px; letter-spacing:.5px; text-transform:uppercase; background:rgba(15,14,12,.8); border:1px solid var(--line); border-radius:5px; padding:2px 6px; color:var(--gold-soft); }
   .gdel { position:absolute; top:8px; right:8px; background:rgba(15,14,12,.8); border:1px solid var(--line); border-radius:6px; padding:4px 8px; color:#e08a8a; }
   .prodform { display:grid; grid-template-columns:1fr 1fr; gap:12px 16px; margin-top:6px; }
   .prodform .full { grid-column:1 / -1; }
@@ -673,7 +740,14 @@ const PANEL_HTML = `<!doctype html>
     <h2 style="margin:0 0 4px;font-size:18px">Galeri Fotoğrafı</h2>
     <div class="err" id="gfErr"></div>
     <form id="gf" class="prodform">
-      <div class="full"><label class="fl">Fotoğraf *</label><input name="image" type="file" accept="image/*" required /></div>
+      <div class="full"><label class="fl">Tür</label>
+        <select name="kind" id="gfKind">
+          <option value="foto">Çalışma / Model fotoğrafı</option>
+          <option value="donusum">Öncesi &amp; Sonrası</option>
+        </select>
+      </div>
+      <div class="full"><label class="fl" id="gfLabel1">Fotoğraf *</label><input name="image" type="file" accept="image/*" required /></div>
+      <div class="full" id="gfAfterWrap" style="display:none"><label class="fl">Sonrası *</label><input name="imageAfter" type="file" accept="image/*" /></div>
       <div><label class="fl">Açıklama (opsiyonel)</label><input name="caption" maxlength="200" placeholder="Saç · Gelin · Bakım..." /></div>
       <div><label class="fl">Sıra</label><input name="sortOrder" type="number" value="0" /></div>
       <div class="full" style="display:flex;gap:10px;margin-top:6px">
@@ -898,9 +972,21 @@ const PANEL_HTML = `<!doctype html>
   // ---------- Kuaför Galeri ----------
   function renderGallery(items) {
     var cards = items.map(function (g) {
-      var img = g.hasImage ? '<img class="gthumb" src="/api/gallery/' + g.id + '/image?v=' + Date.now() + '" alt="" />' : '<div class="gthumb"></div>';
+      var v = "?v=" + Date.now();
+      var img = g.hasImage ? '<img class="gthumb" src="/api/gallery/' + g.id + '/image' + v + '" alt="" />' : '<div class="gthumb"></div>';
+      if (g.kind === "donusum" && g.hasAfter) {
+        img = '<div class="gpair">' +
+          '<div class="gside"><img src="/api/gallery/' + g.id + '/image' + v + '" alt="" /><span>Önce</span></div>' +
+          '<div class="gside"><img src="/api/gallery/' + g.id + '/image-after' + v + '" alt="" /><span>Sonra</span></div>' +
+        '</div>';
+      }
       return '<div class="gcard">' + img +
-        (g.caption ? '<div class="gcap">' + esc(g.caption) + '</div>' : '') +
+        '<div class="gcap">' +
+          '<span class="badge ' + (g.kind === "donusum" ? "kuafor" : "org") + '">' +
+            (g.kind === "donusum" ? "Öncesi & Sonrası" : "Çalışma") +
+          '</span>' +
+          (g.caption ? " " + esc(g.caption) : "") +
+        '</div>' +
         '<button class="del gdel" data-delg="' + g.id + '">Sil</button>' +
       '</div>';
     }).join("");
@@ -920,8 +1006,15 @@ const PANEL_HTML = `<!doctype html>
   function openGallery() {
     document.getElementById("gfErr").textContent = "";
     document.getElementById("gf").reset();
+    syncGalleryKind();
     gmodal.classList.add("show");
   }
+  function syncGalleryKind() {
+    var donusum = document.getElementById("gfKind").value === "donusum";
+    document.getElementById("gfAfterWrap").style.display = donusum ? "" : "none";
+    document.getElementById("gfLabel1").textContent = donusum ? "Öncesi *" : "Fotoğraf *";
+  }
+  document.getElementById("gfKind").onchange = syncGalleryKind;
   function closeGallery() { gmodal.classList.remove("show"); }
   function delGallery(id) {
     if (!confirm("Bu fotoğraf silinsin mi?")) return;

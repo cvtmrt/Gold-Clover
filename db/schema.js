@@ -44,12 +44,17 @@ export const products = pgTable("products", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Kuaför (DS Önce Sen) galeri fotoğrafları — panelden yönetilir, görsel bytea.
+// Kuaför (Dilek Sanık) galeri fotoğrafları — panelden yönetilir, görsel bytea.
+// kind='foto'    → model/çalışma fotoğrafı, sadece imageData.
+// kind='donusum' → öncesi/sonrası: imageData = öncesi, imageDataAfter = sonrası.
 export const gallery = pgTable("gallery", {
   id: serial("id").primaryKey(),
   caption: text("caption"),
+  kind: text("kind").notNull().default("foto"), // foto | donusum
   imageType: text("image_type"),
   imageData: bytea("image_data"),
+  imageTypeAfter: text("image_type_after"),
+  imageDataAfter: bytea("image_data_after"),
   active: boolean("active").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow(),

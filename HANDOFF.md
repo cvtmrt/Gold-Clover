@@ -8,7 +8,7 @@ Detaylı açıklama için `README.md`'ye bak; burada sadece **ne yapacağın** v
 ## Bu proje nedir?
 
 **İki markalı** tanıtım sitesi — ikisi de Ankara/Balgat'ta, aynı adreste:
-**Gold Clover Organizasyon** (etkinlik) ve **DS Önce Sen — Dilek Kuaför Balgat** (güzellik).
+**Gold Clover Organizasyon** (etkinlik) ve **Dilek Sanık — Hair & Beauty Center** (Balgat, güzellik).
 
 - **Frontend:** Vite + React + react-router-dom (SPA, Türkçe). 4 rota:
   `/` portal (marka seçim ekranı) · `/organizasyon` · `/urunler` · `/kuafor`
@@ -76,6 +76,10 @@ npm run dev          # http://localhost:3000
 | GET | `/api/admin/leads` | admin | Talep listesi |
 | PATCH | `/api/admin/leads/:id` | admin | Durum güncelle (`{status}`) |
 | DELETE | `/api/admin/leads/:id` | admin | Talep sil |
+| GET | `/api/gallery` | public | Kuaför galerisi (`kind`, `hasAfter` alanlarıyla) |
+| GET | `/api/gallery/:id/image` | public | Galeri görseli (dönüşümlerde "öncesi") |
+| GET | `/api/gallery/:id/image-after` | public | Dönüşümün "sonrası" görseli |
+| POST | `/api/admin/gallery` | admin | Foto ekle (`kind=foto\|donusum`, `image` + `imageAfter`) |
 
 Admin uçları cookie (`gc_admin`, HttpOnly + prod'da Secure) ile korunur.
 
@@ -101,6 +105,12 @@ public/         # robots.txt, sitemap.xml, llms.txt, images/
 ```
 
 `leads` tablosu: `id, name, phone, event_type, event_date, message, status, brand, created_at`.
+
+`gallery` tablosu iki tür kayıt tutar: `kind='foto'` tek çalışma/model fotoğrafı,
+`kind='donusum'` ise öncesi/sonrası ikilisi (`image_data` = öncesi, `image_data_after`
+= sonrası). Kuaför sayfasındaki galeri, her iki türden de kayıt varsa
+"Tümü / Çalışmalarımız / Öncesi & Sonrası" filtresini gösterir; dönüşüm karoları
+sürüklenebilir karşılaştırma ayracıyla açılır (`src/components/BeforeAfter.jsx`).
 
 ---
 

@@ -4,8 +4,8 @@ import '../styles/portal.css'
 
 export default function PortalPage() {
   useDocumentMeta(
-    'Gold Clover — Organizasyon & DS Önce Sen Kuaför | Ankara',
-    "Gold Clover Organizasyon ve DS Önce Sen (Dilek Kuaför Balgat). Ankara'da etkinlik organizasyonu ve güzellik & kişisel bakım."
+    'Gold Clover Organizasyon & Dilek Sanık Kuaför | Ankara',
+    "Gold Clover Organizasyon ve Dilek Sanık Hair & Beauty Center (Balgat). Ankara'da etkinlik organizasyonu ve güzellik & kişisel bakım."
   )
 
   return (
@@ -30,9 +30,9 @@ export default function PortalPage() {
         <Link to="/kuafor" className="portal__panel portal__panel--kuafor">
           <span className="portal__veil" />
           <div className="portal__content">
-            <span className="portal__ds">DS</span>
+            <img src="/ds-mark-light.png" alt="" className="portal__mark" />
             <h2 className="portal__name display">Kuaför &amp; Güzellik</h2>
-            <span className="portal__sub">DS Önce Sen · Dilek Kuaför · Balgat</span>
+            <span className="portal__sub">Dilek Sanık · Hair &amp; Beauty Center · Balgat</span>
             <span className="portal__cta">Keşfet →</span>
           </div>
         </Link>
