@@ -63,7 +63,7 @@ const KUAFOR_JSONLD = {
         "Sunday",
       ],
       opens: "09:00",
-      closes: "18:00",
+      closes: "19:00",
     },
   ],
 };
@@ -105,7 +105,7 @@ const ROUTES = {
   "/kuafor": {
     title: "DS Önce Sen — Dilek Kuaför Balgat | Ankara Güzellik & Bakım",
     description:
-      "Balgat, Ankara'da saç, makyaj, gelin saçı & makyajı, cilt ve kişisel bakım. DS Önce Sen — Dilek Kuaför. Her gün 09:00–18:00. Randevu: 0552 391 56 60.",
+      "Balgat, Ankara'da saç, makyaj, gelin saçı & makyajı, cilt ve kişisel bakım. DS Önce Sen — Dilek Kuaför. Her gün 09:00–19:00. Randevu: 0552 391 56 60.",
     canonical: `${SITE}/kuafor`,
     ogImage: DEFAULT_OG,
     jsonLd: KUAFOR_JSONLD,
@@ -158,7 +158,7 @@ const SSR_CONTENT = {
       <li>Gelin saçı</li>
       <li>Cilt & kişisel bakım</li>
     </ul>
-    <p>Çalışma saatleri: Her gün 09:00–18:00. Randevu: 0552 391 56 60.</p>`,
+    <p>Çalışma saatleri: Her gün 09:00–19:00. Randevu: 0552 391 56 60.</p>`,
 };
 
 // Ekrandan gizleyen ama içeriği DOM'da bırakan sarmalayıcı (sr-only).

@@ -27,7 +27,7 @@ export default function KuaforPage() {
   useReveal(true)
   useDocumentMeta(
     'DS Önce Sen — Dilek Kuaför Balgat | Ankara Güzellik & Bakım',
-    'Balgat, Ankara’da saç, makyaj, gelin saçı & makyajı, cilt ve kişisel bakım. Her gün 09:00–18:00. Randevu: 0552 391 56 60.'
+    'Balgat, Ankara’da saç, makyaj, gelin saçı & makyajı, cilt ve kişisel bakım. Her gün 09:00–19:00. Randevu: 0552 391 56 60.'
   )
 
   const [status, setStatus] = useState('idle')
@@ -125,7 +125,7 @@ export default function KuaforPage() {
           </div>
           <div className="k-about__card reveal">
             <span className="k-about__label">Çalışma Saatleri</span>
-            <strong className="k-about__hours">Her gün · 09:00 – 18:00</strong>
+            <strong className="k-about__hours">Her gün · 09:00 – 19:00</strong>
             <a href={`tel:${PHONE_TEL}`} className="k-about__phone">{PHONE_DISPLAY}</a>
             <span className="k-about__loc">Balgat, Çankaya / Ankara</span>
           </div>
@@ -162,7 +162,7 @@ export default function KuaforPage() {
           </div>
           <ul className="k-hours__list reveal">
             {DAYS.map((d) => (
-              <li key={d}><span>{d}</span><b>09:00 – 18:00</b></li>
+              <li key={d}><span>{d}</span><b>09:00 – 19:00</b></li>
             ))}
           </ul>
         </div>
@@ -204,7 +204,7 @@ export default function KuaforPage() {
               <li><span>Telefon</span><a href={`tel:${PHONE_TEL}`}>{PHONE_DISPLAY}</a></li>
               <li><span>WhatsApp</span><a href={WA} target="_blank" rel="noreferrer">{PHONE_DISPLAY}</a></li>
               <li><span>Adres</span><b>Balgat, Çankaya / Ankara</b></li>
-              <li><span>Saatler</span><b>Her gün 09:00 – 18:00</b></li>
+              <li><span>Saatler</span><b>Her gün 09:00 – 19:00</b></li>
             </ul>
 
             <div className="k-map">
@@ -270,7 +270,7 @@ export default function KuaforPage() {
             <span>Önce Sen — Dilek Kuaför</span>
           </div>
           <div className="k-footer__meta">
-            <span>Balgat, Çankaya / Ankara · Her gün 09:00–18:00</span>
+            <span>Balgat, Çankaya / Ankara · Her gün 09:00–19:00</span>
             <span>© {new Date().getFullYear()} DS Önce Sen · <Link to="/">Gold Clover</Link></span>
           </div>
         </div>
