@@ -8,10 +8,12 @@ import '../styles/kuafor.css'
 const PHONE_DISPLAY = '0552 391 56 60'
 const PHONE_TEL = '+905523915660'
 const WA = 'https://wa.me/905523915660'
+// Google'daki işletme adı değişikliği onaylandı (2026-08-10). Yeni sorgu, eski
+// sorguyla aynı noktaya düşüyor (39.88224, 32.81492 — ~12 m fark) — doğrulandı.
 const MAP_SRC = `https://maps.google.com/maps?q=${encodeURIComponent(
-  'Bir Damla Kuaför & Güzellik Salonu, Balgat, Ankara'
+  'Dilek Sanık Hair & Beauty Center, Balgat, Ankara'
 )}&z=15&output=embed`
-const MAP_LINK = 'https://share.google/uOBZCIBSEmOiR2J1n'
+const MAP_LINK = 'https://share.google/bx9TMZEIYhSD7em2F'
 
 const SERVICES = [
   ['Saç', 'Kesim, boya, bakım, fön ve şekillendirme — size en yakışanı.'],

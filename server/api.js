@@ -612,6 +612,52 @@ export function mountApi(app) {
     }
   });
 
+  // Açıklama/tür/sıra düzenleme. Görsel değiştirmez — foto değişecekse sil-yeniden yükle.
+  app.patch("/api/admin/gallery/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) {
+      res.status(400).json({ ok: false, error: "Geçersiz istek." });
+      return;
+    }
+    const body = req.body || {};
+    const caption = clean(body.caption, 200) || null;
+    const sortOrder = toInt(body.sortOrder, 0);
+    const active = body.active === undefined ? true : toBool(body.active);
+    const kindRaw = clean(body.kind, 20);
+    const kind = VALID_GALLERY_KIND.has(kindRaw) ? kindRaw : null;
+    try {
+      if (hasDb) {
+        // 'donusum'a ancak ikinci görseli olan bir kayıt geçebilir.
+        if (kind === "donusum") {
+          const [row] = await sql`SELECT (image_data_after IS NOT NULL) AS has_after FROM gallery WHERE id = ${id}`;
+          if (!row?.has_after) {
+            res.status(400).json({ ok: false, error: "Bu kaydın 'sonrası' görseli yok." });
+            return;
+          }
+        }
+        await sql`
+          UPDATE gallery
+          SET caption = ${caption}, sort_order = ${sortOrder}, active = ${active},
+              kind = COALESCE(${kind}, kind)
+          WHERE id = ${id}
+        `;
+      } else {
+        const g = memoryGallery.find((x) => x.id === id);
+        if (g) {
+          if (kind === "donusum" && !g.imageBufferAfter) {
+            res.status(400).json({ ok: false, error: "Bu kaydın 'sonrası' görseli yok." });
+            return;
+          }
+          Object.assign(g, { caption, sortOrder, active }, kind ? { kind } : {});
+        }
+      }
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("galeri güncelleme hatası:", err);
+      res.status(500).json({ ok: false, error: "Güncellenemedi." });
+    }
+  });
+
   app.delete("/api/admin/gallery/:id", requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
     if (!Number.isInteger(id)) {
@@ -986,6 +1032,7 @@ const PANEL_HTML = `<!doctype html>
             (g.kind === "donusum" ? "Öncesi & Sonrası" : "Çalışma") +
           '</span>' +
           (g.caption ? " " + esc(g.caption) : "") +
+          '<br><button class="edit" data-editg="' + g.id + '">Yazıyı düzenle</button>' +
         '</div>' +
         '<button class="del gdel" data-delg="' + g.id + '">Sil</button>' +
       '</div>';
@@ -1002,6 +1049,23 @@ const PANEL_HTML = `<!doctype html>
     Array.prototype.forEach.call(document.querySelectorAll("[data-delg]"), function (b) {
       b.onclick = function () { delGallery(b.getAttribute("data-delg")); };
     });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-editg]"), function (b) {
+      b.onclick = function () {
+        var id = b.getAttribute("data-editg");
+        var g = items.filter(function (x) { return String(x.id) === id; })[0] || {};
+        editGallery(g);
+      };
+    });
+  }
+
+  // Görseli değiştirmeden açıklama/sıra düzenleme.
+  function editGallery(g) {
+    var caption = prompt("Fotoğrafın açıklaması:", g.caption || "");
+    if (caption === null) return;
+    api("/api/admin/gallery/" + g.id, {
+      method: "PATCH",
+      body: JSON.stringify({ caption: caption, sortOrder: g.sortOrder || 0, active: g.active !== false })
+    }).then(function () { load(); });
   }
   function openGallery() {
     document.getElementById("gfErr").textContent = "";

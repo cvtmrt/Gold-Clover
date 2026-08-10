@@ -39,12 +39,11 @@ const KUAFOR_JSONLD = {
   telephone: "+90 552 391 56 60",
   priceRange: "₺₺",
   areaServed: "Balgat, Çankaya, Ankara",
-  sameAs: ["https://www.instagram.com/gold_cloverr"],
-  // BEKLEMEDE: işletme adı değişikliği için Google'a başvuru yapıldı. Başvuru
-  // sonuçlanınca aşağıdaki GERÇEK değerleri gir ve yorumu kaldır — yerel arama
-  // ve Haritalar görünürlüğü için en değerli sinyal bunlar:
-  // geo: { "@type": "GeoCoordinates", latitude: 39.9xxx, longitude: 32.8xxx },
-  // hasMap: "https://maps.google.com/?cid=<gerçek_google_business_cid>",
+  sameAs: ["https://www.instagram.com/ds_hairbeautycenter"],
+  // Google'daki işletme adı değişikliği onaylandı (2026-08-10) — koordinatlar
+  // Maps'in yeni ada verdiği yanıttan alındı, eski kayıtla ~12 m örtüşüyor.
+  geo: { "@type": "GeoCoordinates", latitude: 39.8822401, longitude: 32.8149229 },
+  hasMap: "https://share.google/bx9TMZEIYhSD7em2F",
   address: {
     "@type": "PostalAddress",
     addressLocality: "Balgat, Çankaya",
