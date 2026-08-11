@@ -3,7 +3,7 @@ import TileCaption from './TileCaption.jsx'
 
 // Öncesi/sonrası karşılaştırma karosu — sürüklenen dikey ayraç.
 // "Sonrası" tam görünür, "öncesi" ayraca kadar kırpılır.
-export default function BeforeAfter({ beforeSrc, afterSrc, caption }) {
+export default function BeforeAfter({ beforeSrc, afterSrc, caption, className = '', onExpand }) {
   const wrapRef = useRef(null)
   const dragging = useRef(false)
   const [pos, setPos] = useState(50)
@@ -39,7 +39,7 @@ export default function BeforeAfter({ beforeSrc, afterSrc, caption }) {
 
   return (
     <figure
-      className="k-ba"
+      className={`k-ba ${className}`.trim()}
       ref={wrapRef}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
@@ -73,6 +73,22 @@ export default function BeforeAfter({ beforeSrc, afterSrc, caption }) {
           </svg>
         </span>
       </div>
+
+      {/* Büyütme ayrı bir düğme: karoya tıklamak ayracı sürüklemek demek,
+          tıklayınca açılsaydı her sürüklemede büyük görünüm açılırdı. */}
+      {onExpand && (
+        <button
+          type="button"
+          className="k-ba__zoom"
+          aria-label="Büyüt"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => { e.stopPropagation(); onExpand() }}
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.9">
+            <path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      )}
 
       <TileCaption text={caption} />
     </figure>

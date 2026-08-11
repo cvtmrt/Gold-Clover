@@ -4,6 +4,7 @@ import useReveal from '../hooks/useReveal.js'
 import useDocumentMeta from '../hooks/useDocumentMeta.js'
 import BeforeAfter from '../components/BeforeAfter.jsx'
 import TileCaption from '../components/TileCaption.jsx'
+import Lightbox from '../components/Lightbox.jsx'
 import '../styles/kuafor.css'
 
 const PHONE_DISPLAY = '0552 391 56 60'
@@ -44,6 +45,7 @@ export default function KuaforPage() {
   const [status, setStatus] = useState('idle')
   const [photos, setPhotos] = useState([])
   const [filter, setFilter] = useState('all')
+  const [lightbox, setLightbox] = useState(null) // büyük görünümdeki fotoğrafın sırası
 
   // Öncesi/sonrası kayıtları ikinci fotoğrafı olmadan gösterilmez.
   const transformations = photos.filter((g) => g.kind === 'donusum' && g.hasAfter)
@@ -214,7 +216,7 @@ export default function KuaforPage() {
                     role="tab"
                     aria-selected={filter === key}
                     className={`k-chip${filter === key ? ' k-chip--on' : ''}`}
-                    onClick={() => setFilter(key)}
+                    onClick={() => { setFilter(key); setLightbox(null) }}
                   >
                     {label}
                   </button>
@@ -227,19 +229,26 @@ export default function KuaforPage() {
           </div>
           <div className="k-gallery__grid">
             {photos.length > 0
-              ? shownPhotos.map((g) =>
+              ? shownPhotos.map((g, i) =>
                   g.kind === 'donusum' && g.hasAfter ? (
                     <BeforeAfter
                       key={g.id}
                       beforeSrc={`/api/gallery/${g.id}/image`}
                       afterSrc={`/api/gallery/${g.id}/image-after`}
                       caption={g.caption}
+                      onExpand={() => setLightbox(i)}
                     />
                   ) : (
-                    <figure className="k-tile k-tile--photo" key={g.id}>
+                    <button
+                      type="button"
+                      className="k-tile k-tile--photo"
+                      key={g.id}
+                      onClick={() => setLightbox(i)}
+                      aria-label={`${g.caption || 'Fotoğrafı'} büyüt`}
+                    >
                       <img src={`/api/gallery/${g.id}/image`} alt={g.caption || 'Dilek Sanık'} loading="lazy" />
-                      <TileCaption text={g.caption} />
-                    </figure>
+                      <TileCaption text={g.caption} as="span" />
+                    </button>
                   )
                 )
               : [0, 1, 2, 3, 4, 5].map((n) => (
@@ -331,6 +340,17 @@ export default function KuaforPage() {
           </div>
         </div>
       </footer>
+
+      {lightbox !== null && (
+        <Lightbox
+          items={shownPhotos}
+          index={lightbox}
+          onClose={() => setLightbox(null)}
+          onNavigate={(adim) =>
+            setLightbox((i) => (i + adim + shownPhotos.length) % shownPhotos.length)
+          }
+        />
+      )}
 
       {/* WhatsApp FAB */}
       <a className="k-fab" href={WA} target="_blank" rel="noreferrer" aria-label="WhatsApp">
