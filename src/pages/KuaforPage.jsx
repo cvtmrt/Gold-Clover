@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import useReveal from '../hooks/useReveal.js'
 import useDocumentMeta from '../hooks/useDocumentMeta.js'
 import BeforeAfter from '../components/BeforeAfter.jsx'
+import TileCaption from '../components/TileCaption.jsx'
 import '../styles/kuafor.css'
 
 const PHONE_DISPLAY = '0552 391 56 60'
@@ -237,7 +238,7 @@ export default function KuaforPage() {
                   ) : (
                     <figure className="k-tile k-tile--photo" key={g.id}>
                       <img src={`/api/gallery/${g.id}/image`} alt={g.caption || 'Dilek Sanık'} loading="lazy" />
-                      {g.caption && <figcaption>{g.caption}</figcaption>}
+                      <TileCaption text={g.caption} />
                     </figure>
                   )
                 )

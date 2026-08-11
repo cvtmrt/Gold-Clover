@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import TileCaption from './TileCaption.jsx'
 
 // Öncesi/sonrası karşılaştırma karosu — sürüklenen dikey ayraç.
 // "Sonrası" tam görünür, "öncesi" ayraca kadar kırpılır.
@@ -73,7 +74,7 @@ export default function BeforeAfter({ beforeSrc, afterSrc, caption }) {
         </span>
       </div>
 
-      {caption && <figcaption className="k-ba__caption">{caption}</figcaption>}
+      <TileCaption text={caption} />
     </figure>
   )
 }
