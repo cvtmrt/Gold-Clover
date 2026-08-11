@@ -1089,9 +1089,19 @@ const PANEL_HTML = `<!doctype html>
   document.getElementById("gf").onsubmit = function (e) {
     e.preventDefault();
     var f = e.currentTarget;
-    if (!f.image.files[0]) { document.getElementById("gfErr").textContent = "Fotoğraf seçin."; return; }
+    var kind = f.kind.value === "donusum" ? "donusum" : "foto";
+    if (!f.image.files[0]) {
+      document.getElementById("gfErr").textContent = kind === "donusum" ? "Öncesi fotoğrafını seçin." : "Fotoğraf seçin.";
+      return;
+    }
+    if (kind === "donusum" && !f.imageAfter.files[0]) {
+      document.getElementById("gfErr").textContent = "Sonrası fotoğrafını seçin.";
+      return;
+    }
     var fd = new FormData();
+    fd.append("kind", kind);
     fd.append("image", f.image.files[0]);
+    if (kind === "donusum") fd.append("imageAfter", f.imageAfter.files[0]);
     fd.append("caption", f.caption.value);
     fd.append("sortOrder", f.sortOrder.value || "0");
     document.getElementById("gfSave").disabled = true;
