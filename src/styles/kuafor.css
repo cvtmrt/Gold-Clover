@@ -97,18 +97,30 @@
 .k-gallery { background: var(--kbg); }
 .k-gallery__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
 .k-tile { aspect-ratio: 4/5; border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--kline); }
-/* Sadece fotoğrafsız yer tutucu karodaki "DS" harfi — alt yazıdaki span'leri kapsamamalı. */
-.k-tile > span { font-family: var(--kfont-d); font-size: 2rem; color: var(--kgold); opacity: 0.4; letter-spacing: 2px; }
+/* Fotoğrafsız yer tutucu karodaki "DS" harfi. Kendi sınıfı var: eskiden
+   ".k-tile span" idi ve alt yazının span'lerini de soluklaştırıyordu. */
+.k-tile__ph { font-family: var(--kfont-d); font-size: 2rem; color: var(--kgold); opacity: 0.4; letter-spacing: 2px; }
 .k-tile { position: relative; overflow: hidden; }
 .k-tile--photo { padding: 0; border-color: var(--kline); }
 .k-tile--photo img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.7s var(--kease); }
 .k-tile--photo:hover img { transform: scale(1.06); }
 
 /* Karo alt yazısı: başlık (serif) + ince detay satırı, üstüne yumuşak perde */
-.k-cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 3rem 1.1rem 1.05rem; pointer-events: none; background: linear-gradient(to top, rgba(10,7,4,0.94) 22%, rgba(10,7,4,0.62) 58%, transparent); }
-/* Satır sınırı: panele uzun bir metin girilirse karo yazıyla dolmasın. */
-.k-cap__title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-family: var(--kfont-d); font-size: 1.18rem; line-height: 1.24; font-weight: 500; color: #fff; text-wrap: balance; }
-.k-cap__detail { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin-top: 0.3rem; font-size: 0.79rem; line-height: 1.4; font-weight: 300; color: rgba(240,217,166,0.82); }
+.k-cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 3rem 1.1rem 1rem; pointer-events: none; }
+.k-cap__title { font-family: var(--kfont-d); line-height: 1.25; font-weight: 500; color: #fff; }
+.k-cap__detail { font-size: 0.82rem; line-height: 1.5; font-weight: 300; color: rgba(240,217,166,0.86); }
+
+/* Karoda: tek satırlık kısa etiket. Uzun metin burada okunmuyor — tamamı
+   büyük görünümde. Perde açık saç fotoğraflarında da okunacak kadar koyu. */
+.k-cap--tile { background: linear-gradient(to top, rgba(8,5,3,0.96) 12%, rgba(8,5,3,0.78) 45%, rgba(8,5,3,0.25) 75%, transparent); }
+.k-cap--tile .k-cap__title { display: block; font-size: 1.02rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 12px rgba(0,0,0,0.7); }
+/* Karşılaştırma karosunda sağ altta büyütme işareti var — yazı altına girmesin. */
+.k-ba .k-cap--tile { padding-right: 3.1rem; }
+
+/* Büyük görünümde: başlık + tam metin, kırpma yok. */
+.k-cap--full { position: static; padding: 0; background: none; pointer-events: auto; }
+.k-cap--full .k-cap__title { display: block; font-size: 1.22rem; }
+.k-cap--full .k-cap__detail { display: block; margin-top: 0.35rem; }
 /* Galeri kategori çipleri */
 .k-filters { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; margin-top: 1.8rem; }
 .k-chip { padding: 0.55rem 1.25rem; border-radius: 100px; border: 1px solid var(--kline); background: transparent; color: rgba(243,235,224,0.8); font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease; }
@@ -117,7 +129,8 @@
 .k-gallery__hint { margin-top: 1rem; font-size: 0.88rem; }
 
 /* Öncesi / sonrası karşılaştırma karosu */
-.k-ba { position: relative; margin: 0; aspect-ratio: 4/5; border-radius: 12px; overflow: hidden; border: 1px solid var(--kline); background: #17110d; touch-action: pan-y; cursor: ew-resize; user-select: none; }
+.k-ba { position: relative; margin: 0; aspect-ratio: 4/5; border-radius: 12px; overflow: hidden; border: 1px solid var(--kline); background: #17110d; touch-action: pan-y; cursor: zoom-in; user-select: none; }
+.k-ba__handle { cursor: ew-resize; }
 .k-ba__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; -webkit-user-drag: none; }
 .k-ba__clip { position: absolute; inset: 0; }
 .k-ba__tag { position: absolute; top: 0.7rem; font-size: 0.64rem; letter-spacing: 0.16em; text-transform: uppercase; padding: 0.3rem 0.6rem; border-radius: 100px; background: rgba(16,11,6,0.72); border: 1px solid var(--kline); color: var(--kgold-2); backdrop-filter: blur(6px); pointer-events: none; }
@@ -131,22 +144,23 @@
 button.k-tile { padding: 0; border: 1px solid var(--kline); background: none; font: inherit; color: inherit; text-align: left; cursor: zoom-in; width: 100%; }
 button.k-tile:focus-visible { outline: 2px solid var(--kgold-2); outline-offset: 3px; }
 
-/* Öncesi/sonrası karosundaki büyütme düğmesi */
-.k-ba__zoom { position: absolute; right: 0.7rem; bottom: 0.7rem; z-index: 3; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: rgba(16,11,6,0.72); border: 1px solid rgba(240,217,166,0.35); color: var(--kgold-2); cursor: zoom-in; backdrop-filter: blur(6px); transition: background 0.3s ease, transform 0.3s ease; }
-.k-ba__zoom:hover { background: rgba(16,11,6,0.9); transform: translateY(-2px); }
+/* Karşılaştırma karosunda "tıklanabilir" ipucu — tıklamayı karonun kendisi
+   yakaladığı için düğme değil, sadece işaret (pointer-events: none). */
+.k-ba__zoom { position: absolute; right: 0.7rem; bottom: 0.75rem; z-index: 3; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: rgba(16,11,6,0.6); border: 1px solid rgba(240,217,166,0.3); color: var(--kgold-2); backdrop-filter: blur(6px); pointer-events: none; opacity: 0.75; transition: opacity 0.3s ease; }
+.k-ba:hover .k-ba__zoom { opacity: 1; }
 
 /* Büyük görünüm (lightbox) */
 .k-lb { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: clamp(1rem, 4vw, 2.5rem); background: rgba(8,5,3,0.93); backdrop-filter: blur(10px); animation: k-lb-in 0.22s var(--kease); }
 @keyframes k-lb-in { from { opacity: 0; } to { opacity: 1; } }
-.k-lb__stage { margin: 0; width: min(560px, 100%); max-height: 100%; display: flex; flex-direction: column; gap: 0.9rem; }
+.k-lb__stage { margin: 0; width: min(560px, 100%); max-height: 100%; display: flex; flex-direction: column; align-items: center; gap: 0.9rem; }
 .k-lb__img { display: block; width: 100%; max-height: min(76vh, 900px); object-fit: contain; border-radius: 14px; }
-.k-lb .k-ba--lb { aspect-ratio: 3/4; max-height: min(76vh, 900px); border-radius: 14px; cursor: ew-resize; }
-.k-lb .k-ba--lb .k-cap { display: none; }
+/* Oran fotoğrafın kendisinden geliyor (inline aspect-ratio); yüksekliği ekrana
+   sabitleyip genişliği ona bırakıyoruz, böylece dikey kareler kırpılmıyor. */
+.k-lb .k-ba--lb { aspect-ratio: 3/4; height: min(76vh, 880px); width: auto; max-width: 100%; border-radius: 14px; cursor: ew-resize; }
+.k-lb .k-ba--lb .k-cap, .k-lb .k-ba--lb .k-ba__zoom { display: none; }
+.k-lb__bar { width: 100%; }
 
 .k-lb__bar { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; }
-.k-lb__bar .k-cap { position: static; padding: 0; background: none; pointer-events: auto; }
-.k-lb__bar .k-cap__title { -webkit-line-clamp: 3; }
-.k-lb__bar .k-cap__detail { -webkit-line-clamp: 4; }
 .k-lb__count { flex: none; font-size: 0.76rem; letter-spacing: 0.16em; color: var(--kmuted); padding-bottom: 0.15rem; }
 
 .k-lb__close, .k-lb__nav { position: absolute; display: grid; place-items: center; border-radius: 50%; background: rgba(28,20,13,0.75); border: 1px solid var(--kline); color: var(--ktext); cursor: pointer; transition: background 0.3s ease, color 0.3s ease, transform 0.3s ease; }

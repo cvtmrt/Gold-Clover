@@ -3,50 +3,93 @@ import TileCaption from './TileCaption.jsx'
 
 // Öncesi/sonrası karşılaştırma karosu — sürüklenen dikey ayraç.
 // "Sonrası" tam görünür, "öncesi" ayraca kadar kırpılır.
-export default function BeforeAfter({ beforeSrc, afterSrc, caption, className = '', onExpand }) {
+//
+// onExpand verilirse karo hem sürüklenebilir hem tıklanabilir olur: parmak/fare
+// kayarsa ayraç hareket eder, yerinde kısa bir dokunuşsa büyük görünüm açılır.
+// (Ayrı bir düğme koymak yerine böyle çözüldü; kimse köşedeki düğmeyi bulmuyordu.)
+// Süre şartı yok bilerek: yavaş/uzun bir dokunuş da tıklama sayılmalı.
+// Ayrım tek ölçüye dayanıyor — parmak/fare kaydı mı kaymadı mı.
+const TIKLAMA_TOLERANSI = 6 // px
+
+export default function BeforeAfter({
+  beforeSrc,
+  afterSrc,
+  caption,
+  className = '',
+  onExpand,
+  fitToImage = false, // büyük görünümde fotoğrafın kendi oranını kullan
+}) {
   const wrapRef = useRef(null)
-  const dragging = useRef(false)
+  const bastigiYer = useRef(null)
+  const surukledi = useRef(false)
   const [pos, setPos] = useState(50)
+  const [oran, setOran] = useState(null)
 
   function moveTo(clientX) {
     const el = wrapRef.current
     if (!el) return
     const rect = el.getBoundingClientRect()
-    const next = ((clientX - rect.left) / rect.width) * 100
-    setPos(Math.min(100, Math.max(0, next)))
+    setPos(Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100)))
   }
 
   function onPointerDown(e) {
-    dragging.current = true
+    bastigiYer.current = { x: e.clientX, y: e.clientY }
+    surukledi.current = false
     e.currentTarget.setPointerCapture(e.pointerId)
-    moveTo(e.clientX)
   }
+
   function onPointerMove(e) {
-    if (!dragging.current) return
+    const bas = bastigiYer.current
+    if (!bas) return
+    if (!surukledi.current) {
+      const uzaklik = Math.hypot(e.clientX - bas.x, e.clientY - bas.y)
+      if (uzaklik < TIKLAMA_TOLERANSI) return // henüz tıklama mı sürükleme mi belli değil
+      surukledi.current = true
+    }
     moveTo(e.clientX)
   }
+
   function onPointerUp(e) {
-    dragging.current = false
+    const bas = bastigiYer.current
+    bastigiYer.current = null
     e.currentTarget.releasePointerCapture?.(e.pointerId)
+    if (!bas) return
+
+    const kaymadi = Math.hypot(e.clientX - bas.x, e.clientY - bas.y) < TIKLAMA_TOLERANSI
+
+    if (kaymadi && onExpand) onExpand()
+    else if (kaymadi) moveTo(e.clientX) // büyütme yoksa (büyük görünüm) ayracı oraya taşı
+    surukledi.current = false
   }
+
   function onKeyDown(e) {
     const step = e.shiftKey ? 10 : 4
     if (e.key === 'ArrowLeft') setPos((p) => Math.max(0, p - step))
     else if (e.key === 'ArrowRight') setPos((p) => Math.min(100, p + step))
     else return
     e.preventDefault()
+    e.stopPropagation() // büyük görünümdeki fotoğraf geçişini tetiklemesin
   }
 
   return (
     <figure
       className={`k-ba ${className}`.trim()}
       ref={wrapRef}
+      style={fitToImage && oran ? { aspectRatio: oran } : undefined}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
     >
-      <img className="k-ba__img" src={afterSrc} alt={caption ? `${caption} — sonrası` : 'Sonrası'} loading="lazy" />
+      <img
+        className="k-ba__img"
+        src={afterSrc}
+        alt={caption ? `${caption} — sonrası` : 'Sonrası'}
+        loading="lazy"
+        onLoad={(e) => {
+          if (fitToImage) setOran(e.currentTarget.naturalWidth / e.currentTarget.naturalHeight)
+        }}
+      />
       {/* Öncesi katmanı tam boyutta durur; sadece clip-path ile kırpılır — böylece
           ayraç kayarken fotoğraf ezilmez/kaymaz. */}
       <div className="k-ba__clip" style={{ clipPath: `inset(0 ${100 - pos}% 0 0)` }}>
@@ -74,20 +117,13 @@ export default function BeforeAfter({ beforeSrc, afterSrc, caption, className = 
         </span>
       </div>
 
-      {/* Büyütme ayrı bir düğme: karoya tıklamak ayracı sürüklemek demek,
-          tıklayınca açılsaydı her sürüklemede büyük görünüm açılırdı. */}
+      {/* Tıklanabilirlik ipucu — tıklamayı karonun kendisi yakalıyor. */}
       {onExpand && (
-        <button
-          type="button"
-          className="k-ba__zoom"
-          aria-label="Büyüt"
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => { e.stopPropagation(); onExpand() }}
-        >
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.9">
+        <span className="k-ba__zoom" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.9">
             <path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-        </button>
+        </span>
       )}
 
       <TileCaption text={caption} />

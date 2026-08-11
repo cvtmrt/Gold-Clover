@@ -252,7 +252,7 @@ export default function KuaforPage() {
                   )
                 )
               : [0, 1, 2, 3, 4, 5].map((n) => (
-                  <div className={`k-tile k-tile--${n % 3}`} key={n}><span>DS</span></div>
+                  <div className={`k-tile k-tile--${n % 3}`} key={n}><span className="k-tile__ph">DS</span></div>
                 ))}
           </div>
         </div>

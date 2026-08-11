@@ -1,46 +1,65 @@
-// Galeri karosunun alt yazısı: üstte serif başlık, altında ince detay satırı.
-// Panele yazı girenin belirli bir kalıba uymasını beklemiyoruz — metni olduğu
-// gibi alıp en makul yerden ikiye ayırıyoruz.
-const AYRAC = /\s[—–|·]\s/ // açıkça ayraç konmuşsa önceliği o alır
-const BASLIK_UST_SINIR = 68 // bundan uzun bir başlık karoda blok gibi görünüyor
-const EN_KISA_BASLIK = 16 // "Saç," gibi tek kelimelik bir başlık üretmeyelim
+// Galeri yazısı iki yerde görünür ve ikisinde farklı davranır:
+//   variant="tile" → karonun altında tek satırlık kısa etiket (yer dar)
+//   variant="full" → büyük görünümde başlık + tam metin (yer bol)
+// Panele girilen metnin belirli bir kalıba uyması beklenmez.
+const AYRAC = /\s[—–|·]\s/ // elle ayraç konmuşsa önceliği o alır
+const KARO_SINIR = 58 // karoda bundan uzun etiket iki satıra taşıp kırpılıyor
+const BASLIK_UST_SINIR = 80 // yalnızca büyük görünümde kullanılır, orada yer bol
+const EN_KISA_BASLIK = 16
+
+// Kelimeyi ortasından kesmeden kısaltır; mümkünse cümle sonunda biter.
+function kisalt(metin, sinir) {
+  const t = metin.trim()
+  if (t.length <= sinir) return t
+
+  const cumle = t.lastIndexOf('. ', sinir)
+  if (cumle > sinir * 0.45) return t.slice(0, cumle + 1)
+
+  const kesit = t.slice(0, sinir)
+  const bosluk = kesit.lastIndexOf(' ')
+  const govde = bosluk > sinir * 0.45 ? kesit.slice(0, bosluk) : kesit
+  return govde.replace(/[,;:.\s]+$/, '') + '…'
+}
 
 function ayir(metin) {
   const t = metin.trim()
 
-  // 1) Elle konmuş ayraç: "Sombre balayaj — doğal geçişli kahve tonları"
   const parcalar = t.split(AYRAC)
   if (parcalar.length > 1) {
     return { baslik: parcalar[0].trim(), detay: parcalar.slice(1).join(' · ').trim() }
   }
 
-  // 2) İlk cümle başlık olacak kadar kısaysa oradan böl
   const nokta = t.indexOf('. ')
   if (nokta > 0 && nokta <= BASLIK_UST_SINIR) {
     return { baslik: t.slice(0, nokta).trim(), detay: t.slice(nokta + 1).trim() }
   }
 
-  // 3) Cümle sınırı yoksa ilk virgülü ayraç gibi kullan
   const virgul = t.indexOf(', ')
   if (virgul >= EN_KISA_BASLIK && virgul <= BASLIK_UST_SINIR) {
     return { baslik: t.slice(0, virgul).trim(), detay: t.slice(virgul + 1).trim() }
   }
 
-  // 4) Bölünecek yer yok ama kısa: tamamı başlık
   if (t.length <= BASLIK_UST_SINIR) return { baslik: t, detay: '' }
-
-  // 5) Uzun ve bölünemiyor — hepsini ince detay satırı olarak bas ki
-  //    dev serif blok halinde karoyu kaplamasın.
   return { baslik: '', detay: t }
 }
 
-export default function TileCaption({ text, as: Tag = 'figcaption' }) {
+export default function TileCaption({ text, as: Tag = 'figcaption', variant = 'tile' }) {
   if (!text) return null
-  const { baslik, detay } = ayir(String(text))
-  if (!baslik && !detay) return null
+  const t = String(text).trim()
+  if (!t) return null
 
+  // Karoda tek satır: uzun metin burada okunmuyor, tamamı büyük görünümde.
+  if (variant === 'tile') {
+    return (
+      <Tag className="k-cap k-cap--tile">
+        <span className="k-cap__title">{kisalt(t, KARO_SINIR)}</span>
+      </Tag>
+    )
+  }
+
+  const { baslik, detay } = ayir(t)
   return (
-    <Tag className="k-cap">
+    <Tag className="k-cap k-cap--full">
       {baslik && <span className="k-cap__title">{baslik}</span>}
       {detay && <span className="k-cap__detail">{detay}</span>}
     </Tag>

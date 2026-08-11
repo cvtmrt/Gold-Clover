@@ -7,6 +7,7 @@ import TileCaption from './TileCaption.jsx'
 export default function Lightbox({ items, index, onClose, onNavigate }) {
   const kapatRef = useRef(null)
   const oncekiOdak = useRef(null)
+  const karartidaBasildi = useRef(false)
   const item = items[index]
 
   useEffect(() => {
@@ -45,7 +46,15 @@ export default function Lightbox({ items, index, onClose, onNavigate }) {
       role="dialog"
       aria-modal="true"
       aria-label={item.caption || 'Galeri fotoğrafı'}
-      onClick={onClose}
+      // Karartıya tıklayınca kapansın — ama yalnızca basma DA karartıda başladıysa.
+      // Aksi halde: (a) karoya dokunup açtığımızda hemen ardından gelen click
+      // olayı yeni açılan karartıya düşüp pencereyi anında kapatıyordu,
+      // (b) ayracı sürükleyip parmağı dışarıda bırakınca pencere kapanıyordu.
+      onPointerDown={(e) => { karartidaBasildi.current = e.target === e.currentTarget }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget && karartidaBasildi.current) onClose()
+        karartidaBasildi.current = false
+      }}
     >
       <button ref={kapatRef} type="button" className="k-lb__close" onClick={onClose} aria-label="Kapat">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -84,6 +93,7 @@ export default function Lightbox({ items, index, onClose, onNavigate }) {
           <BeforeAfter
             key={item.id}
             className="k-ba--lb"
+            fitToImage
             beforeSrc={`/api/gallery/${item.id}/image`}
             afterSrc={`/api/gallery/${item.id}/image-after`}
           />
@@ -92,7 +102,7 @@ export default function Lightbox({ items, index, onClose, onNavigate }) {
         )}
 
         <div className="k-lb__bar">
-          <TileCaption text={item.caption} as="figcaption" />
+          <TileCaption text={item.caption} as="figcaption" variant="full" />
           {items.length > 1 && (
             <span className="k-lb__count">{index + 1} / {items.length}</span>
           )}
