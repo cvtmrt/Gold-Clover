@@ -14,11 +14,20 @@ export default function Navbar() {
   const [open, setOpen] = useState(false)
   const { pathname } = useLocation()
   const onOrg = pathname === '/organizasyon'
-  // Org sayfasında hero koyu olduğu için şeffaf nav; diğer sayfalarda (açık zemin) hep solid.
-  const solid = scrolled || !onOrg
+  // Bölge sayfaları da /organizasyon altında ve koyu hero ile açılıyor.
+  const onOrgAlani = pathname.startsWith('/organizasyon')
+  // Koyu hero'lu sayfalarda şeffaf nav; diğer sayfalarda (açık zemin) hep solid.
+  const solid = scrolled || !onOrgAlani
 
-  // Org sayfasındaysak sayfa içi kaydırma (#), değilsek org sayfasına gidip kaydır.
-  const secHref = (hash) => (onOrg ? hash : `/organizasyon${hash}`)
+  // Sayfada gerçekten var olan bölümler için sayfa içi (#) kaydırma; olmayanlar
+  // için ana organizasyon sayfasına gidip oraya kaydır. Bölge sayfalarında
+  // About ve Process bölümleri yok.
+  const sayfaIci = onOrg
+    ? ['#about', '#services', '#process', '#gallery', '#contact']
+    : onOrgAlani
+    ? ['#services', '#gallery', '#contact']
+    : []
+  const secHref = (hash) => (sayfaIci.includes(hash) ? hash : `/organizasyon${hash}`)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40)

@@ -7,9 +7,11 @@ import Testimonial from '../components/Testimonial.jsx'
 import Gallery from '../components/Gallery.jsx'
 import Contact from '../components/Contact.jsx'
 import Footer from '../components/Footer.jsx'
+import BolgeSerit from '../components/BolgeSerit.jsx'
 import useReveal from '../hooks/useReveal.js'
 import useDocumentMeta from '../hooks/useDocumentMeta.js'
 import '../styles/app.css'
+import '../styles/bolge.css'
 
 export default function OrganizasyonPage() {
   useReveal(true)
@@ -28,6 +30,7 @@ export default function OrganizasyonPage() {
         <Process />
         <Testimonial />
         <Gallery />
+        <BolgeSerit />
         <Contact />
       </main>
       <Footer />

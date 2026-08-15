@@ -4,7 +4,8 @@
 
 ## Gold Clover Organizasyon
 Ankara'da söz, nişan, doğum günü, baby shower, balon konsepti ve özel kutlama organizasyonu. Butik çiçek aranjmanları, hediyelikler ve konsept ürünler.
-- Hizmet bölgesi: Ankara
+- Hizmet bölgesi: Ankara'nın 25 ilçesi ve yoğun talep gelen semtler (Çayyolu, Ümitköy, Çukurambar, Balgat, Oran, Bilkent & Beysukent, Eryaman, Etlik, Batıkent, İncek)
+- Atölye: Balgat, Çankaya
 - İletişim: +90 551 862 56 60
 - Instagram: https://www.instagram.com/gold_cloverr
 
@@ -19,3 +20,6 @@ Balgat, Çankaya (Ankara)'da saç, makyaj, gelin saçı & makyajı, cilt bakım�
 - Organizasyon: https://goldclover.site/organizasyon
 - Ürünler: https://goldclover.site/urunler
 - Kuaför: https://goldclover.site/kuafor
+- Hizmet bölgeleri (tüm ilçe ve semtler): https://goldclover.site/organizasyon/bolgeler
+- Bölge sayfası formatı: https://goldclover.site/organizasyon/<ilce-veya-semt> (örn. /organizasyon/cankaya, /organizasyon/cayyolu)
+- Sitemap: https://goldclover.site/sitemap.xml

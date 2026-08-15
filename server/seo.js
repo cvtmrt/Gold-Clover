@@ -2,6 +2,12 @@
 // <title>/description/OG/JSON-LD döndürür → arama motorları ilk yanıtta doğru içeriği görür.
 // index.html içindeki <!--SEO--> işaretçisi rota bloğuyla değiştirilir.
 
+import BOLGELER, {
+  bolgeBul,
+  bolgeBaslik,
+  bolgeAciklama,
+} from "../src/data/bolgeler.js";
+
 const SITE = "https://goldclover.site";
 const DEFAULT_OG = `${SITE}/images/hero.webp`;
 
@@ -110,7 +116,130 @@ const ROUTES = {
     ogImage: DEFAULT_OG,
     jsonLd: KUAFOR_JSONLD,
   },
+  "/organizasyon/bolgeler": {
+    title: "Ankara Organizasyon Bölgeleri — Tüm İlçe ve Semtler | Gold Clover",
+    description:
+      "Gold Clover Ankara'nın 25 ilçesinde ve yoğun talep gelen semtlerde organizasyon, balon süsleme ve çiçek hizmeti veriyor. Bölgenizi seçin, teklif alın.",
+    canonical: `${SITE}/organizasyon/bolgeler`,
+    ogImage: DEFAULT_OG,
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      name: "Ankara organizasyon bölgeleri",
+      url: `${SITE}/organizasyon/bolgeler`,
+      inLanguage: "tr-TR",
+      about: { "@id": `${SITE}/organizasyon` },
+      hasPart: BOLGELER.map((b) => ({
+        "@type": "WebPage",
+        name: `${b.ad} organizasyon`,
+        url: `${SITE}/organizasyon/${b.slug}`,
+      })),
+    },
+  },
 };
+
+// ————————————————————————————————————————————————————————————
+// Bölge (ilçe / semt) sayfaları — /organizasyon/<slug>
+// Tek veri kaynağı src/data/bolgeler.js; buradaki fonksiyonlar o veriden
+// hem meta bloğunu hem JSON-LD'yi hem de crawler'ın göreceği metni üretir.
+// ————————————————————————————————————————————————————————————
+
+// "/organizasyon/cankaya" → "cankaya" · diğer her şey için null
+function bolgeSlugu(key) {
+  const m = /^\/organizasyon\/([a-z0-9-]+)$/.exec(key);
+  if (!m) return null;
+  if (m[1] === "bolgeler") return null; // statik ROUTES'ta tanımlı
+  return bolgeBul(m[1]) ? m[1] : null;
+}
+
+function bolgeJsonLd(b) {
+  const url = `${SITE}/organizasyon/${b.slug}`;
+  const alan =
+    b.tip === "semt"
+      ? { "@type": "Place", name: `${b.ad}, Ankara` }
+      : { "@type": "AdministrativeArea", name: `${b.ad}, Ankara` };
+
+  return [
+    {
+      "@context": "https://schema.org",
+      "@type": "Service",
+      serviceType: "Etkinlik organizasyonu ve balon süsleme",
+      name: `${b.ad} organizasyon ve balon süsleme`,
+      description: bolgeAciklama(b),
+      url,
+      areaServed: alan,
+      provider: { ...ORG_JSONLD },
+      hasOfferCatalog: {
+        "@type": "OfferCatalog",
+        name: `${b.ad} hizmetleri`,
+        itemListElement: b.oneCikan.map((ad) => ({
+          "@type": "Offer",
+          itemOffered: { "@type": "Service", name: ad },
+        })),
+      },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Organizasyon", item: `${SITE}/organizasyon` },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Bölgeler",
+          item: `${SITE}/organizasyon/bolgeler`,
+        },
+        { "@type": "ListItem", position: 3, name: b.ad, item: url },
+      ],
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: b.sss.map((q) => ({
+        "@type": "Question",
+        name: q.s,
+        acceptedAnswer: { "@type": "Answer", text: q.c },
+      })),
+    },
+  ];
+}
+
+function bolgeRotasi(slug) {
+  const b = bolgeBul(slug);
+  if (!b) return null;
+  return {
+    title: bolgeBaslik(b),
+    description: bolgeAciklama(b),
+    canonical: `${SITE}/organizasyon/${b.slug}`,
+    ogImage: DEFAULT_OG,
+    jsonLd: bolgeJsonLd(b),
+  };
+}
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+// Bölge sayfasının crawler'a görünen statik metni (React mount olunca silinir).
+function bolgeSsr(slug) {
+  const b = bolgeBul(slug);
+  if (!b) return SSR_CONTENT["/"];
+  return `
+    <h1>${esc(b.ad)} Organizasyon ve Balon Süsleme — Gold Clover Ankara</h1>
+    <p>${esc(b.giris)}</p>
+    <p>${esc(b.mekan)}</p>
+    <h2>${esc(b.ad)}'da en çok istenen organizasyonlar</h2>
+    <ul>${b.oneCikan.map((s) => `<li>${esc(s)}</li>`).join("")}</ul>
+    <h2>Hizmet verdiğimiz mahalle ve semtler</h2>
+    <ul>${b.mahalleler.map((m) => `<li>${esc(m)}</li>`).join("")}</ul>
+    <p>${esc(b.mesafe)} Atölyemiz Balgat, Çankaya'da. Teklif için: 0551 862 56 60.</p>
+    <h2>Sık sorulan sorular</h2>
+    ${b.sss.map((q) => `<h3>${esc(q.s)}</h3><p>${esc(q.c)}</p>`).join("")}
+    <p><a href="/organizasyon/bolgeler">Ankara'da hizmet verdiğimiz tüm bölgeler</a></p>`;
+}
 
 // Route bazlı statik içerik bloğu. #root içine basılır; React mount olunca
 // createRoot() container'ı temizleyip üzerine yazar → kullanıcı görmez, ama
@@ -159,6 +288,14 @@ const SSR_CONTENT = {
       <li>Cilt & kişisel bakım</li>
     </ul>
     <p>Çalışma saatleri: Her gün 09:00–19:00. Randevu: 0552 391 56 60.</p>`,
+  "/organizasyon/bolgeler": `
+    <h1>Ankara Organizasyon Bölgeleri — Gold Clover</h1>
+    <p>Atölyemiz Balgat, Çankaya'da. Kurulum ekibimiz Ankara'nın 25 ilçesine ve yoğun talep gelen semtlere gidiyor.</p>
+    <h2>Hizmet verdiğimiz bölgeler</h2>
+    <ul>${BOLGELER.map(
+      (b) =>
+        `<li><a href="/organizasyon/${b.slug}">${b.ad} organizasyon ve balon süsleme</a></li>`,
+    ).join("")}</ul>`,
 };
 
 // Ekrandan gizleyen ama içeriği DOM'da bırakan sarmalayıcı (sr-only).
@@ -169,7 +306,8 @@ const SSR_HIDDEN_STYLE =
   "white-space:nowrap;border:0";
 
 function ssrBlock(key) {
-  const content = SSR_CONTENT[key] || SSR_CONTENT["/"];
+  const slug = bolgeSlugu(key);
+  const content = slug ? bolgeSsr(slug) : SSR_CONTENT[key] || SSR_CONTENT["/"];
   return `<div data-seo-ssr style="${SSR_HIDDEN_STYLE}">${content}</div>`;
 }
 
@@ -211,14 +349,17 @@ function routeKey(pathname) {
 
 // Sunucunun 200 mü 404 mü döneceğine karar vermesi için: tanımlı rota mı?
 export function isKnownRoute(pathname) {
-  return Object.prototype.hasOwnProperty.call(ROUTES, routeKey(pathname));
+  const key = routeKey(pathname);
+  if (Object.prototype.hasOwnProperty.call(ROUTES, key)) return true;
+  return bolgeSlugu(key) !== null;
 }
 
 // index.html'i alır, path'e göre <title> ve <!--SEO--> işaretçisini doldurur.
 export function injectMeta(html, pathname) {
   const key = routeKey(pathname);
   const known = isKnownRoute(key);
-  const route = ROUTES[key] || ROUTES["/"];
+  const slug = bolgeSlugu(key);
+  const route = (slug && bolgeRotasi(slug)) || ROUTES[key] || ROUTES["/"];
   return html
     .replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapeAttr(route.title)}</title>`)
     .replace("<!--SEO-->", metaBlock(route, known))
@@ -226,6 +367,37 @@ export function injectMeta(html, pathname) {
       '<div id="root"></div>',
       `<div id="root">${ssrBlock(key)}</div>`,
     );
+}
+
+// ————————————————————————————————————————————————————————————
+// sitemap.xml — statik dosya yerine burada üretilir. Böylece yeni bir bölge
+// eklendiğinde sitemap'i elle güncellemek gerekmez.
+// ————————————————————————————————————————————————————————————
+export function buildSitemap(lastmod) {
+  const tarih = lastmod || new Date().toISOString().slice(0, 10);
+  const sayfalar = [
+    { loc: `${SITE}/`, freq: "monthly", pri: "1.0" },
+    { loc: `${SITE}/organizasyon`, freq: "monthly", pri: "0.9" },
+    { loc: `${SITE}/kuafor`, freq: "monthly", pri: "0.9" },
+    { loc: `${SITE}/urunler`, freq: "weekly", pri: "0.8" },
+    { loc: `${SITE}/organizasyon/bolgeler`, freq: "monthly", pri: "0.7" },
+    ...BOLGELER.map((b) => ({
+      loc: `${SITE}/organizasyon/${b.slug}`,
+      freq: "monthly",
+      // Semtler ve merkez ilçeler öncelikli; uzak ilçeler daha düşük.
+      pri: b.tip === "semt" ? "0.7" : "0.6",
+    })),
+  ];
+
+  const govde = sayfalar
+    .map(
+      (s) =>
+        `  <url>\n    <loc>${s.loc}</loc>\n    <lastmod>${tarih}</lastmod>\n` +
+        `    <changefreq>${s.freq}</changefreq>\n    <priority>${s.pri}</priority>\n  </url>`,
+    )
+    .join("\n");
+
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${govde}\n</urlset>\n`;
 }
 
 export { SITE, ROUTES };

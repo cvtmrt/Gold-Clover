@@ -1,0 +1,260 @@
+/* ============================================================
+   GOLD CLOVER — Bölge (ilçe / semt) sayfaları
+   app.css'teki hero, section ve buton dilini yeniden kullanır;
+   burada yalnızca bölgeye özel bloklar tanımlıdır.
+   ============================================================ */
+
+/* Bölge hero'su ana hero'dan daha kısa: içerik yukarıda başlasın. */
+.hero--bolge { min-height: 72vh; }
+.hero--liste { min-height: 62vh; }
+
+.bolge__crumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+  margin-bottom: 1.2rem;
+}
+.bolge__crumb a:hover { color: var(--gold-light); }
+.bolge__crumb strong { color: var(--gold-light); font-weight: 500; }
+.bolge__crumb span { opacity: 0.5; }
+
+/* ---------- BÖLGE İÇERİĞİ ---------- */
+.bolge { padding: clamp(4rem, 9vw, 7rem) 0; background: var(--cream); }
+
+.bolge__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: start;
+}
+
+.bolge__main h2 { font-size: clamp(2rem, 4.2vw, 3rem); margin: 0.4rem 0 1.4rem; }
+.bolge__main > p {
+  color: var(--ink-2);
+  margin-bottom: 1.1rem;
+  max-width: 62ch;
+}
+
+.bolge__h3 {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 500;
+  margin: 2.2rem 0 0.9rem;
+  color: var(--ink);
+}
+
+.bolge__tags {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+.bolge__tags li {
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 999px;
+  padding: 0.42rem 0.95rem;
+  font-size: 0.86rem;
+  color: var(--ink-2);
+  box-shadow: var(--shadow-soft);
+}
+.bolge__tags--soft li {
+  background: var(--cream-2);
+  box-shadow: none;
+  color: var(--muted);
+}
+
+/* ---------- YAN KART ---------- */
+.bolge__side { position: sticky; top: 96px; }
+
+.bolge__card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 1.6rem;
+  box-shadow: var(--shadow-card);
+}
+.bolge__card h3 {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+.bolge__card dl { margin-bottom: 1.4rem; }
+.bolge__card dt {
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 0.9rem;
+}
+.bolge__card dt:first-child { margin-top: 0; }
+.bolge__card dd { font-size: 0.95rem; color: var(--ink-2); }
+.bolge__card dd a { color: var(--gold); }
+.bolge__card dd a:hover { text-decoration: underline; }
+
+.bolge__cardcta { width: 100%; text-align: center; }
+
+.bolge__cardnote {
+  margin-top: 1rem;
+  font-size: 0.84rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.bolge__cardnote a { color: var(--gold); }
+.bolge__cardnote a:hover { text-decoration: underline; }
+
+/* ---------- SIK SORULANLAR ---------- */
+.sss { padding: clamp(4rem, 9vw, 7rem) 0; background: var(--cream-2); }
+.sss__inner { max-width: 900px; }
+.sss__inner h2 { font-size: clamp(2rem, 4.2vw, 3rem); margin: 0.4rem 0 2rem; }
+
+.sss__list { display: grid; gap: 0.8rem; }
+
+.sss__item {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.05rem 1.3rem;
+}
+.sss__item summary {
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 1.12rem;
+  font-weight: 500;
+  color: var(--ink);
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+.sss__item summary::-webkit-details-marker { display: none; }
+.sss__item summary::after {
+  content: '+';
+  color: var(--gold);
+  font-size: 1.4rem;
+  line-height: 1;
+  transition: transform 0.25s var(--ease);
+}
+.sss__item[open] summary::after { transform: rotate(45deg); }
+.sss__item p {
+  margin-top: 0.8rem;
+  color: var(--ink-2);
+  font-size: 0.95rem;
+}
+
+/* ---------- YAKIN BÖLGELER ---------- */
+.yakin { padding: clamp(4rem, 9vw, 7rem) 0; background: var(--cream); }
+.yakin__inner h2 { font-size: clamp(2rem, 4.2vw, 3rem); margin: 0.4rem 0 2rem; }
+
+.yakin__grid,
+.liste__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 1rem;
+}
+
+.yakin__card,
+.liste__card {
+  display: block;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.15rem 1.25rem;
+  transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease);
+}
+.yakin__card:hover,
+.liste__card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card);
+}
+.yakin__card strong,
+.liste__card strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 0.35rem;
+}
+.yakin__card span,
+.liste__card span {
+  display: block;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+.liste__card em {
+  display: block;
+  margin-top: 0.6rem;
+  font-style: normal;
+  font-size: 0.78rem;
+  color: var(--gold);
+}
+
+.yakin__all { margin-top: 2rem; display: inline-block; }
+
+/* ---------- BÖLGE LİSTESİ ---------- */
+.liste { padding: clamp(4rem, 9vw, 7rem) 0; background: var(--cream); }
+.liste__inner h2 { font-size: clamp(2rem, 4.2vw, 3rem); margin: 0.4rem 0 2rem; }
+.liste__ara { display: inline-block; margin-top: 3.5rem; }
+
+/* ---------- ANA SAYFADAKİ BÖLGE ŞERİDİ ---------- */
+.serit {
+  padding: clamp(4rem, 9vw, 6.5rem) 0;
+  background: linear-gradient(to bottom, var(--cream-2), var(--cream));
+}
+.serit__inner { text-align: center; }
+.serit__inner h2 { font-size: clamp(2rem, 4.2vw, 3rem); margin: 0.4rem 0 1rem; }
+.serit__lead {
+  max-width: 60ch;
+  margin: 0 auto 2.2rem;
+  color: var(--ink-2);
+}
+.serit__list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+.serit__list a {
+  display: block;
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 999px;
+  padding: 0.45rem 1rem;
+  font-size: 0.88rem;
+  color: var(--ink-2);
+  transition: color 0.25s ease, border-color 0.25s ease, transform 0.25s var(--ease);
+}
+.serit__list a:hover {
+  color: var(--gold);
+  border-color: var(--gold-soft);
+  transform: translateY(-2px);
+}
+.serit__cta { display: inline-block; }
+
+/* ---------- 404 ---------- */
+.bolge404 {
+  min-height: 62vh;
+  display: flex;
+  align-items: center;
+  padding: 8rem 0 4rem;
+}
+.bolge404 h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); margin-bottom: 1rem; }
+.bolge404 p { color: var(--ink-2); max-width: 52ch; margin-bottom: 1.8rem; }
+.bolge404__actions { display: flex; gap: 0.8rem; flex-wrap: wrap; }
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width: 900px) {
+  .bolge__inner { grid-template-columns: 1fr; }
+  .bolge__side { position: static; }
+}

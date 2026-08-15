@@ -1,3 +1,10 @@
+import { Link } from 'react-router-dom'
+import { SEMTLER, ILCELER, bolgeYolu } from '../data/bolgeler.js'
+
+// Footer'daki bölge sütunu: en çok talep gelen semtler + merkez ilçeler.
+// Tam liste /organizasyon/bolgeler sayfasında.
+const ONE_CIKAN_BOLGELER = [...SEMTLER.slice(0, 5), ...ILCELER.slice(0, 4)]
+
 export default function Footer() {
   return (
     <footer className="footer">
@@ -23,6 +30,13 @@ export default function Footer() {
             <a href="#services">Düğün &amp; Nişan</a>
             <a href="#services">Özel Kutlamalar</a>
             <a href="#services">Kurumsal Etkinlik</a>
+          </div>
+          <div>
+            <h4>Bölgeler</h4>
+            {ONE_CIKAN_BOLGELER.map((b) => (
+              <Link key={b.slug} to={bolgeYolu(b.slug)}>{b.ad}</Link>
+            ))}
+            <Link to="/organizasyon/bolgeler" className="footer__more">Tüm bölgeler →</Link>
           </div>
           <div>
             <h4>İletişim</h4>

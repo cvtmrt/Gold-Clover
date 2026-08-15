@@ -7,7 +7,7 @@ import compression from "compression";
 import fs from "fs";
 import path from "path";
 import { mountApi } from "./api.js";
-import { injectMeta, isKnownRoute } from "./seo.js";
+import { injectMeta, isKnownRoute, buildSitemap } from "./seo.js";
 import { hasDb } from "../db/index.js";
 import { ensureSchema } from "../db/ensure-schema.js";
 import "dotenv/config";
@@ -35,6 +35,12 @@ async function startServer() {
 
   // Lead/ürün API + admin paneli (/panel). Vite/statik middleware'lerden ÖNCE.
   mountApi(app);
+
+  // sitemap.xml dinamik üretilir (bölge sayfaları dahil). Statik dosyadan önce
+  // tanımlı olduğu için public/dist içindeki bir kopyayı da geçersiz kılar.
+  app.get("/sitemap.xml", (_req, res) => {
+    res.type("application/xml").send(buildSitemap());
+  });
 
   const server = http.createServer(app);
 
