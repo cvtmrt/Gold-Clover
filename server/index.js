@@ -42,6 +42,13 @@ async function startServer() {
     res.type("application/xml").send(buildSitemap());
   });
 
+  // /index.html statik dosya olarak servis edilirse SEO enjeksiyonundan geçmez
+  // (canonical'sız, varsayılan başlıklı ham sayfa) ve ana sayfanın kopyası olarak
+  // taranır. Kalıcı olarak "/" adresine yönlendiriyoruz.
+  app.get(["/index.html", "/index.htm"], (_req, res) => {
+    res.redirect(301, "/");
+  });
+
   const server = http.createServer(app);
 
   if (isProduction) {
