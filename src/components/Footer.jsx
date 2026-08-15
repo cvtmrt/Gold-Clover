@@ -41,8 +41,8 @@ export default function Footer() {
           <div>
             <h4>İletişim</h4>
             <a href="https://www.instagram.com/gold_cloverr" target="_blank" rel="noreferrer">@gold_cloverr</a>
-            <a href="mailto:hello@goldclover.com">hello@goldclover.com</a>
-            <span>Çankaya, Ankara</span>
+            <a href="tel:+905518625660">0551 862 56 60</a>
+            <span>Balgat, Çankaya, Ankara</span>
           </div>
         </div>
       </div>
