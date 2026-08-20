@@ -1,37 +1,41 @@
-import { useState } from 'react'
-
 const MAP_SRC = `https://maps.google.com/maps?q=${encodeURIComponent(
   'Bir Damla Kuaför & Güzellik Salonu, Balgat, Ankara'
 )}&z=15&output=embed`
 const MAP_LINK = 'https://share.google/uOBZCIBSEmOiR2J1n'
+const WHATSAPP_NUMBER = '905518625660'
+
+function valueOf(formData, name) {
+  return String(formData.get(name) || '').trim()
+}
+
+function formatDate(value) {
+  const [year, month, day] = value.split('-')
+  return year && month && day ? [day, month, year].join('.') : value
+}
 
 export default function Contact() {
-  const [status, setStatus] = useState('idle') // idle | sending | sent | error
-
-  async function handleSubmit(e) {
+  function handleSubmit(e) {
     e.preventDefault()
-    const form = e.currentTarget
-    const f = new FormData(form)
-    setStatus('sending')
-    try {
-      const res = await fetch('/api/lead', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: f.get('name') || '',
-          phone: f.get('phone') || '',
-          type: f.get('type') || '',
-          date: f.get('date') || '',
-          message: f.get('message') || '',
-          brand: 'organizasyon',
-        }),
-      })
-      if (!res.ok) throw new Error('request failed')
-      form.reset()
-      setStatus('sent')
-    } catch {
-      setStatus('error')
-    }
+    const f = new FormData(e.currentTarget)
+    const phone = valueOf(f, 'phone')
+    const type = valueOf(f, 'type')
+    const date = valueOf(f, 'date')
+    const note = valueOf(f, 'message')
+    const lines = [
+      'Merhaba Gold Clover, web sitenizden teklif almak istiyorum. 🍀',
+      '',
+      'Ad Soyad: ' + valueOf(f, 'name'),
+      phone && 'Telefon: ' + phone,
+      type && 'Organizasyon Türü: ' + type,
+      date && 'Etkinlik Tarihi: ' + formatDate(date),
+      note && 'Mesaj: ' + note,
+    ].filter(Boolean)
+
+    window.open(
+      'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(lines.join('\n')),
+      '_blank',
+      'noopener,noreferrer',
+    )
   }
 
   return (
@@ -109,15 +113,26 @@ export default function Contact() {
             <label htmlFor="message">Mesajınız</label>
             <textarea id="message" name="message" rows="4" placeholder="Hayalinizdeki günü birkaç cümleyle anlatın..." />
           </div>
-          <button type="submit" className="btn btn-gold contact__submit" disabled={status === 'sending'}>
-            {status === 'sending' ? 'Gönderiliyor…' : status === 'sent' ? 'Teşekkürler! 🍀' : 'Teklif İste'}
+          <details className="contact__kvkk-text">
+            <summary>KVKK Aydınlatma Metni</summary>
+            <p>
+              Formda paylaştığınız bilgiler, teklif talebinizi yanıtlamak ve sizinle iletişim kurmak
+              amacıyla Gold Clover Organizasyon tarafından işlenir. “WhatsApp’tan Gönder” butonuna
+              bastığınızda bilgileriniz WhatsApp mesajı olarak hazırlanır ve mesaj yalnızca sizin
+              onayınızla gönderilir. Aktarımda WhatsApp/Meta altyapısı kullanılabilir. 6698 sayılı
+              KVKK’nın 11. maddesindeki haklarınıza ilişkin talepleriniz için 0551 862 56 60
+              numarasından bize ulaşabilirsiniz.
+            </p>
+          </details>
+          <label className="contact__kvkk-check">
+            <input name="kvkk" type="checkbox" required />
+            <span>KVKK Aydınlatma Metni’ni okudum ve bilgilendirildim.</span>
+          </label>
+          <button type="submit" className="btn btn-gold contact__submit">
+            WhatsApp’tan Gönder
           </button>
           <p className="contact__note">
-            {status === 'sent'
-              ? 'Talebiniz alındı; 24 saat içinde size dönüş yapacağız.'
-              : status === 'error'
-              ? 'Bir hata oluştu. Lütfen tekrar deneyin veya bizi arayın.'
-              : 'Formu gönderdiğinizde talebiniz doğrudan ekibimize ulaşır.'}
+            Bilgileriniz WhatsApp mesajı olarak hazırlanır; son gönderim onayı sizdedir.
           </p>
         </form>
       </div>

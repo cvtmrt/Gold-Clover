@@ -250,6 +250,11 @@
 }
 .field textarea { resize: vertical; min-height: 110px; }
 .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--gold-soft); box-shadow: 0 0 0 3px rgba(216,178,94,0.18); }
+.contact__kvkk-text { margin: -0.1rem 0 0.9rem; padding: 0.8rem 0.9rem; border: 1px solid var(--border); border-radius: 9px; background: var(--cream); color: var(--ink-2); }
+.contact__kvkk-text summary { cursor: pointer; color: var(--gold); font-size: 0.82rem; font-weight: 600; }
+.contact__kvkk-text p { margin-top: 0.7rem; font-size: 0.76rem; line-height: 1.65; }
+.contact__kvkk-check { display: flex; align-items: flex-start; gap: 0.7rem; margin-bottom: 1rem; color: var(--ink-2); font-size: 0.8rem; line-height: 1.45; cursor: pointer; }
+.contact__kvkk-check input { flex: 0 0 auto; width: 17px; height: 17px; margin-top: 0.08rem; accent-color: var(--gold); }
 .contact__submit { width: 100%; margin-top: 0.4rem; }
 .contact__note { text-align: center; font-size: 0.78rem; color: var(--muted); margin-top: 0.9rem; }
 

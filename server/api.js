@@ -879,9 +879,19 @@ const PANEL_HTML = `<!doctype html>
   }
   function fmtDate(iso) {
     if (!iso) return "";
-    var d = new Date(iso);
+    var value = String(iso);
+    var hasTimeZone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(value);
+    var normalized = hasTimeZone ? value : value.replace(" ", "T") + "Z";
+    var d = new Date(normalized);
     if (isNaN(d.getTime())) return esc(iso);
-    return d.toLocaleDateString("tr-TR") + " " + d.toLocaleTimeString("tr-TR", { hour:"2-digit", minute:"2-digit" });
+    return new Intl.DateTimeFormat("tr-TR", {
+      timeZone: "Europe/Istanbul",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit"
+    }).format(d);
   }
 
   function renderLeads(items, db) {
