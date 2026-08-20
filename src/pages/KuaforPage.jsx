@@ -300,7 +300,12 @@ export default function KuaforPage() {
               </div>
               <div className="k-field">
                 <label htmlFor="k-date">Tarih</label>
-                <input id="k-date" name="date" type="date" />
+                <input
+                  id="k-date"
+                  name="date"
+                  type="date"
+                  onClick={(e) => e.currentTarget.showPicker?.()}
+                />
               </div>
             </div>
             <div className="k-field">
