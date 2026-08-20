@@ -30,12 +30,9 @@ export default function Contact() {
       date && 'Etkinlik Tarihi: ' + formatDate(date),
       note && 'Mesaj: ' + note,
     ].filter(Boolean)
-
-    window.open(
-      'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(lines.join('\n')),
-      '_blank',
-      'noopener,noreferrer',
-    )
+    const whatsappUrl =
+      'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(lines.join('\n'))
+    window.location.href = whatsappUrl
   }
 
   return (
