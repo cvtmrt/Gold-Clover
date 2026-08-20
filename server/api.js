@@ -880,7 +880,7 @@ const PANEL_HTML = `<!doctype html>
   function fmtDate(iso) {
     if (!iso) return "";
     var value = String(iso);
-    var hasTimeZone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(value);
+    var hasTimeZone = /(?:Z|[+-][0-9]{2}:?[0-9]{2})$/i.test(value);
     var normalized = hasTimeZone ? value : value.replace(" ", "T") + "Z";
     var d = new Date(normalized);
     if (isNaN(d.getTime())) return esc(iso);
