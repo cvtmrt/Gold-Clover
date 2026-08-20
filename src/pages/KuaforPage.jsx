@@ -35,6 +35,15 @@ const FILTERS = [
   ['donusum', 'Öncesi & Sonrası'],
 ]
 
+function formValue(formData, name) {
+  return String(formData.get(name) || '').trim()
+}
+
+function formatFormDate(value) {
+  const [year, month, day] = value.split('-')
+  return year && month && day ? [day, month, year].join('.') : value
+}
+
 export default function KuaforPage() {
   useReveal(true)
   useDocumentMeta(
@@ -42,7 +51,6 @@ export default function KuaforPage() {
     "Balgat, Ankara'da saç, makyaj, gelin saçı & makyajı, cilt ve kişisel bakım. Dilek Sanık Hair & Beauty Center. Her gün 09:00–19:00. Randevu: 0552 391 56 60."
   )
 
-  const [status, setStatus] = useState('idle')
   const [photos, setPhotos] = useState([])
   const [filter, setFilter] = useState('all')
   const [lightbox, setLightbox] = useState(null) // büyük görünümdeki fotoğrafın sırası
@@ -65,30 +73,24 @@ export default function KuaforPage() {
     }
   }, [])
 
-  async function handleSubmit(e) {
+  function handleSubmit(e) {
     e.preventDefault()
-    const form = e.currentTarget
-    const f = new FormData(form)
-    setStatus('sending')
-    try {
-      const res = await fetch('/api/lead', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: f.get('name') || '',
-          phone: f.get('phone') || '',
-          type: f.get('type') || '',
-          date: f.get('date') || '',
-          message: f.get('message') || '',
-          brand: 'kuafor',
-        }),
-      })
-      if (!res.ok) throw new Error('fail')
-      form.reset()
-      setStatus('sent')
-    } catch {
-      setStatus('error')
-    }
+    const f = new FormData(e.currentTarget)
+    const phone = formValue(f, 'phone')
+    const service = formValue(f, 'type')
+    const date = formValue(f, 'date')
+    const note = formValue(f, 'message')
+    const lines = [
+      'Merhaba Dilek Sanık Hair & Beauty Center, randevu almak istiyorum. ✨',
+      '',
+      'Ad Soyad: ' + formValue(f, 'name'),
+      phone && 'Telefon: ' + phone,
+      service && 'Hizmet: ' + service,
+      date && 'Tarih: ' + formatFormDate(date),
+      note && 'Not: ' + note,
+    ].filter(Boolean)
+    const whatsappUrl = WA + '?text=' + encodeURIComponent(lines.join('\n'))
+    window.location.href = whatsappUrl
   }
 
   return (
@@ -313,15 +315,24 @@ export default function KuaforPage() {
               <label htmlFor="k-msg">Notunuz</label>
               <textarea id="k-msg" name="message" rows="3" placeholder="İsteğinizi kısaca yazın..." />
             </div>
-            <button type="submit" className="k-btn k-btn--gold k-form__submit" disabled={status === 'sending'}>
-              {status === 'sending' ? 'Gönderiliyor…' : status === 'sent' ? 'Talebiniz alındı ✨' : 'Randevu Talebi Gönder'}
+            <details className="k-form__kvkk-text">
+              <summary>KVKK Aydınlatma Metni</summary>
+              <p>
+                Paylaştığınız bilgiler randevu talebinizi yanıtlamak amacıyla Dilek Sanık Hair
+                &amp; Beauty Center tarafından işlenir. WhatsApp’tan Gönder butonu bilgilerinizi
+                WhatsApp mesajı olarak hazırlar; mesaj yalnızca sizin onayınızla gönderilir.
+                KVKK kapsamındaki talepleriniz için 0552 391 56 60 numarasından bize ulaşabilirsiniz.
+              </p>
+            </details>
+            <label className="k-form__kvkk-check">
+              <input name="kvkk" type="checkbox" required />
+              <span>KVKK Aydınlatma Metni’ni okudum ve bilgilendirildim.</span>
+            </label>
+            <button type="submit" className="k-btn k-btn--gold k-form__submit">
+              WhatsApp’tan Gönder
             </button>
             <p className="k-form__note">
-              {status === 'sent'
-                ? 'Teşekkürler! En kısa sürede sizinle iletişime geçeceğiz.'
-                : status === 'error'
-                ? 'Bir hata oluştu. Lütfen bizi arayın veya WhatsApp’tan yazın.'
-                : 'Talebiniz doğrudan salonumuza ulaşır.'}
+              Bilgileriniz WhatsApp mesajı olarak hazırlanır; son gönderim onayı sizdedir.
             </p>
           </form>
         </div>

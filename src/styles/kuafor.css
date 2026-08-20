@@ -206,6 +206,11 @@ button.k-tile:focus-visible { outline: 2px solid var(--kgold-2); outline-offset:
 .k-field input, .k-field select, .k-field textarea { font-family: inherit; font-size: 0.98rem; color: var(--ktext); padding: 0.8rem 1rem; border: 1px solid var(--kline); border-radius: 9px; background: var(--kbg); width: 100%; min-height: 46px; transition: border-color 0.3s ease, box-shadow 0.3s ease; }
 .k-field textarea { resize: vertical; min-height: 90px; }
 .k-field input:focus, .k-field select:focus, .k-field textarea:focus { outline: none; border-color: var(--kgold); box-shadow: 0 0 0 3px rgba(217,184,120,0.16); }
+.k-form__kvkk-text { margin: -0.1rem 0 0.9rem; padding: 0.8rem 0.9rem; border: 1px solid var(--kline); border-radius: 9px; background: var(--kbg); color: var(--kmuted); }
+.k-form__kvkk-text summary { cursor: pointer; color: var(--kgold-2); font-size: 0.82rem; font-weight: 600; }
+.k-form__kvkk-text p { margin-top: 0.7rem; font-size: 0.76rem; line-height: 1.65; }
+.k-form__kvkk-check { display: flex; align-items: flex-start; gap: 0.7rem; margin-bottom: 1rem; color: var(--kmuted); font-size: 0.8rem; line-height: 1.45; cursor: pointer; }
+.k-form__kvkk-check input { flex: 0 0 auto; width: 17px; height: 17px; margin-top: 0.08rem; accent-color: var(--kgold); }
 .k-form__submit { width: 100%; margin-top: 0.4rem; }
 .k-form__note { text-align: center; font-size: 0.78rem; color: var(--kmuted); margin-top: 0.9rem; }
 
